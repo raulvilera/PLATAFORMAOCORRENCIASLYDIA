@@ -28,6 +28,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     };
   }, []);
 
+  // Mapeamento de aliases de e-mail para contas reais
+  // gestao@escola.com é um alias que redireciona para vilera@prof.educacao.sp.gov.br
+  const EMAIL_ALIASES: Record<string, string> = {
+    'gestao@escola.com': 'vilera@prof.educacao.sp.gov.br'
+  };
+
+  const resolveEmailAlias = (email: string): string => {
+    const lowerEmail = email.toLowerCase().trim();
+    return EMAIL_ALIASES[lowerEmail] || lowerEmail;
+  };
+
   const validateInstitutionalEmail = (email: string) => {
     const lowerEmail = email.toLowerCase().trim();
     return lowerEmail.endsWith('@prof.educacao.sp.gov.br') ||
@@ -43,7 +54,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       const lowerEmail = email.toLowerCase().trim();
-      console.log('🔐 [LOGIN] Tentando login com:', lowerEmail);
+      const displayEmail = lowerEmail; // Email que o usuário digitou (para exibição)
+      const authEmail = resolveEmailAlias(lowerEmail); // Email real para autenticação
+
+      console.log('🔐 [LOGIN] Tentando login com:', displayEmail);
+      if (displayEmail !== authEmail) {
+        console.log('🔄 [LOGIN] Usando alias: ' + displayEmail + ' → ' + authEmail);
+      }
 
       if (!validateInstitutionalEmail(lowerEmail)) {
         throw new Error('ACESSO NEGADO: UTILIZE SEU E-MAIL INSTITUCIONAL (@PROF).');
@@ -53,7 +70,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.log('🔗 [LOGIN] Conectando ao Supabase...');
 
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: lowerEmail,
+        email: authEmail, // Usa o email real para autenticação
         password
       });
 
@@ -76,16 +93,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (data.user) {
         console.log('✅ [LOGIN] Login bem-sucedido! Usuário:', data.user.email);
 
-        // VALIDAÇÃO DE WHITELIST: Apenas professores cadastrados podem acessar
-        if (!isProfessorRegistered(lowerEmail)) {
-          console.error('❌ [LOGIN] E-mail não cadastrado no sistema:', lowerEmail);
+        // VALIDAÇÃO DE WHITELIST: Verifica o email original (não o alias)
+        if (!isProfessorRegistered(displayEmail)) {
+          console.error('❌ [LOGIN] E-mail não cadastrado no sistema:', displayEmail);
           await supabase.auth.signOut(); // Faz logout automático
           throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ CADASTRADO NA PLATAFORMA. CONTATE A GESTÃO PARA AUTORIZAÇÃO.');
         }
 
         console.log('✅ [LOGIN] Professor cadastrado confirmado!');
-        const role = lowerEmail === 'gestao@escola.com' ? 'gestor' : 'professor';
-        onLogin({ email: data.user.email!, role });
+        // Define role baseado no email que o usuário digitou (display), não no email real
+        const role = displayEmail === 'gestao@escola.com' ? 'gestor' : 'professor';
+        onLogin({ email: displayEmail, role }); // Usa o email de display para manter a experiência
       }
 
     } catch (err: any) {
@@ -160,6 +178,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       const lowerEmail = email.toLowerCase().trim();
+      const authEmail = resolveEmailAlias(lowerEmail); // Resolve para o email real
+
       if (!validateInstitutionalEmail(lowerEmail)) {
         throw new Error('E-MAIL INVÁLIDO OU NÃO INSTITUCIONAL.');
       }
@@ -169,7 +189,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         throw new Error('E-MAIL NÃO CADASTRADO NO SISTEMA. CONTATE A GESTÃO.');
       }
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(lowerEmail, {
+      console.log('🔄 [RESET] Enviando redefinição de senha para:', authEmail);
+      if (lowerEmail !== authEmail) {
+        console.log('📧 [RESET] Alias detectado: ' + lowerEmail + ' → ' + authEmail);
+      }
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(authEmail, {
         redirectTo: `${window.location.origin}/`,
       });
 
