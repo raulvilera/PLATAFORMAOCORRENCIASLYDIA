@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Incident, User, Student } from '../types';
 import { generateIncidentPDF, uploadPDFToStorage } from '../services/pdfService';
 import { getProfessorNameFromEmail } from '../professorsData';
+import StatusBadge from './StatusBadge';
 
 interface ProfessorViewProps {
   user: User;
@@ -93,18 +94,28 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
       // Upload dos PDFs em paralelo
       console.log(`📤 Iniciando upload de ${newIncidents.length} PDFs...`);
       const pdfUrls = await Promise.all(
-        newIncidents.map(inc => uploadPDFToStorage(inc))
+        newIncidents.map((inc, index) => {
+          console.log(`📄 Upload ${index + 1}/${newIncidents.length}: ${inc.studentName}`);
+          return uploadPDFToStorage(inc);
+        })
       );
 
       // Atualizar cada incidente com sua URL
+      let failedUploads = 0;
       newIncidents.forEach((inc, index) => {
         if (pdfUrls[index]) {
           inc.pdfUrl = pdfUrls[index];
           console.log(`✅ PDF ${index + 1}/${newIncidents.length} enviado:`, inc.studentName);
+          console.log(`🔗 URL:`, pdfUrls[index]);
         } else {
+          failedUploads++;
           console.warn(`⚠️ Falha no upload do PDF ${index + 1}/${newIncidents.length}:`, inc.studentName);
         }
       });
+
+      if (failedUploads > 0) {
+        alert(`⚠️ ATENÇÃO: ${failedUploads} PDF(s) não puderam ser gerados. Os registros serão salvos mas sem os links dos documentos.`);
+      }
 
       onSave(newIncidents);
       alert(`${newIncidents.length} registros gravados.`);
@@ -122,12 +133,23 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
 
   const filteredHistory = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return incidents.filter(i =>
+
+    // Se há busca ativa por aluno, mostrar histórico completo daquele aluno
+    // Senão, mostrar apenas as ocorrências do professor logado
+    let baseIncidents = incidents;
+
+    if (!term) {
+      // Sem busca: mostrar apenas minhas ocorrências
+      baseIncidents = incidents.filter(i => i.authorEmail === user.email);
+    }
+
+    // Aplicar filtro de busca
+    return baseIncidents.filter(i =>
       (i.studentName || "").toLowerCase().includes(term) ||
       (i.classRoom || "").toLowerCase().includes(term) ||
       (i.professorName || "").toLowerCase().includes(term)
     );
-  }, [incidents, searchTerm]);
+  }, [incidents, searchTerm, user.email]);
 
   return (
     <div className="min-h-screen bg-[#001a35] font-sans pb-12 overflow-x-hidden">
@@ -261,6 +283,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
               <thead className="bg-gray-50 border-b font-black uppercase text-gray-400">
                 <tr>
                   <th className="p-4">Data</th>
+                  <th className="p-4">Status</th>
                   <th className="p-4">Aluno</th>
                   <th className="p-4">Turma</th>
                   <th className="p-4">Responsável</th>
@@ -273,6 +296,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                 {filteredHistory.length > 0 ? filteredHistory.map(inc => (
                   <tr key={inc.id} className="hover:bg-blue-50/50 transition-all">
                     <td className="p-4 font-bold text-gray-500">{inc.date}</td>
+                    <td className="p-4"><StatusBadge status={inc.status} size="small" /></td>
                     <td className="p-4"><span className="font-black text-blue-900 uppercase">{inc.studentName}</span></td>
                     <td className="p-4 font-black text-blue-600">{inc.classRoom}</td>
                     <td className="p-4 uppercase font-bold text-gray-400">{inc.professorName}</td>

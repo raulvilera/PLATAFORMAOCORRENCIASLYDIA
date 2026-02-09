@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta de Teste</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .info-box strong {
+            color: #1976D2;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .credentials {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .credentials code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Criar Conta de Teste</h1>
+        <p class="subtitle">Sistema de Gestão Lydia Kitz</p>
+        
+        <div class="info-box">
+            <strong>📋 O que este script faz:</strong><br>
+            Cria automaticamente uma conta de teste no Supabase com credenciais conhecidas para você fazer login imediatamente.
+        </div>
+
+        <div class="credentials">
+            <strong>🎯 Credenciais que serão criadas:</strong><br><br>
+            <strong>E-mail:</strong> <code>teste.dev@prof.educacao.sp.gov.br</code><br>
+            <strong>Senha:</strong> <code>teste123</code>
+        </div>
+
+        <button id="createBtn" onclick="createTestAccount()">
+            ✨ CRIAR CONTA AGORA
+        </button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://zvuxzrfbmmbhuhwaofrn.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXh6cmZibW1iaHVod2FvZnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2ODkxNDEsImV4cCI6MjA4MjI2NTE0MX0.GpA8qLVeLF01x0baSALC1AmRTcKL90ALpxt35qKLVTQ';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        async function createTestAccount() {
+            const btn = document.getElementById('createBtn');
+            const resultDiv = document.getElementById('result');
+            
+            // Reset
+            btn.disabled = true;
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'loading';
+            resultDiv.innerHTML = '⏳ Criando conta de teste...';
+
+            try {
+                const email = 'teste.dev@prof.educacao.sp.gov.br';
+                const password = 'teste123';
+
+                console.log('📝 Tentando criar conta:', email);
+                
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    console.error('❌ Erro:', error);
+                    
+                    if (error.message.includes('already registered')) {
+                        resultDiv.className = 'success';
+                        resultDiv.innerHTML = `
+                            ✅ <strong>Conta já existe!</strong><br><br>
+                            Isso significa que a conta de teste já foi criada anteriormente.<br><br>
+                            <strong>Use estas credenciais para fazer login:</strong><br>
+                            📧 E-mail: <code>teste.dev@prof.educacao.sp.gov.br</code><br>
+                            🔑 Senha: <code>teste123</code><br><br>
+                            <a href="http://localhost:3000" style="color: #1976D2; font-weight: bold;">
+                                🚀 Ir para a página de login →
+                            </a>
+                        `;
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    console.log('✅ Conta criada:', data);
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        ✅ <strong>Conta criada com sucesso!</strong><br><br>
+                        <strong>Use estas credenciais para fazer login:</strong><br>
+                        📧 E-mail: <code>teste.dev@prof.educacao.sp.gov.br</code><br>
+                        🔑 Senha: <code>teste123</code><br><br>
+                        <a href="http://localhost:3000" style="color: #1976D2; font-weight: bold;">
+                            🚀 Ir para a página de login →
+                        </a>
+                    `;
+                }
+            } catch (err) {
+                console.error('❌ Erro fatal:', err);
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    ❌ <strong>Erro ao criar conta:</strong><br>
+                    ${err.message}<br><br>
+                    Por favor, tente novamente ou entre em contato com o suporte.
+                `;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

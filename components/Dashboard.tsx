@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Incident, User, Student } from '../types';
 import { generateIncidentPDF, uploadPDFToStorage } from '../services/pdfService';
+import StatusBadge from './StatusBadge';
 
 interface DashboardProps {
   user: User;
@@ -12,6 +13,7 @@ interface DashboardProps {
   onDelete: (id: string) => void;
   onLogout: () => void;
   onOpenSearch: () => void;
+  onUpdateIncident?: (incident: Incident) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classes, onSave, onDelete, onLogout, onOpenSearch }) => {
@@ -84,15 +86,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
 
     // Upload do PDF para Supabase Storage
     try {
+      console.log('📤 Iniciando upload do PDF para:', newInc.studentName);
       const uploadedPdfUrl = await uploadPDFToStorage(newInc);
+
       if (uploadedPdfUrl) {
         newInc.pdfUrl = uploadedPdfUrl;
-        console.log('✅ PDF enviado com sucesso:', uploadedPdfUrl);
+        console.log('✅ PDF enviado com sucesso!');
+        console.log('🔗 URL:', uploadedPdfUrl);
       } else {
         console.warn('⚠️ Falha no upload do PDF. Registro será salvo sem link.');
+        alert('⚠️ ATENÇÃO: O PDF não pôde ser enviado. O registro será salvo mas sem o link do documento.');
       }
     } catch (err) {
       console.error('❌ Erro ao fazer upload do PDF:', err);
+      alert('❌ ERRO ao gerar PDF. O registro será salvo mas sem o documento.');
     }
 
     onSave(newInc);
@@ -279,6 +286,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
               <thead className="bg-[#f8fafc] border-b text-black sticky top-0 z-10">
                 <tr>
                   <th className="p-4 font-black uppercase">Data</th>
+                  <th className="p-4 font-black uppercase">Status</th>
                   <th className="p-4 font-black uppercase">Aluno</th>
                   <th className="p-4 font-black uppercase">Turma</th>
                   <th className="p-4 font-black uppercase">Tipo</th>
@@ -292,6 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                 {history.length > 0 ? history.map(inc => (
                   <tr key={inc.id} className="hover:bg-blue-50/40 transition-all">
                     <td className="p-4 font-black text-gray-500">{inc.date}</td>
+                    <td className="p-4"><StatusBadge status={inc.status} size="small" /></td>
                     <td className="p-4">
                       <div className="flex flex-col">
                         <span className="font-black text-[#002b5c] uppercase">{inc.studentName}</span>

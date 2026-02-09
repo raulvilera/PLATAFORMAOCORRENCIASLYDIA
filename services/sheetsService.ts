@@ -13,11 +13,13 @@ export const saveToGoogleSheets = async (incident: Incident) => {
 
     /**
      * Usa a URL pública do PDF armazenado no Supabase Storage.
-     * Se não houver URL (upload falhou), mostra mensagem de processamento.
+     * Se não houver URL (upload falhou), mostra mensagem de erro.
      */
+    console.log(`📋 Google Sheets - Aluno: ${incident.studentName}, PDF URL:`, incident.pdfUrl || 'não disponível');
+
     const pdfLinkFormula = incident.pdfUrl
       ? `=HYPERLINK("${incident.pdfUrl}"; "📄 ABRIR PDF")`
-      : "⏳ Processando...";
+      : "❌ PDF não gerado";
 
     const values = isGestao ? [
       incident.date,                           // 1. Data

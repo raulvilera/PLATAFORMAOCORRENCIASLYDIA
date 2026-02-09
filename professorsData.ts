@@ -13,6 +13,7 @@ export const PROFESSORS_DB: ProfessorData[] = [
     // { email: 'joao.santos@professor.educacao.sp.gov.br', nome: 'JOÃO SANTOS' },
     { email: 'gestao@escola.com', nome: 'GESTÃO ESCOLAR' },
     { email: 'vilera@prof.educacao.sp.gov.br', nome: 'VILERA' },
+    { email: 'teste.dev@prof.educacao.sp.gov.br', nome: 'CONTA DE TESTE' },
 ];
 
 /**

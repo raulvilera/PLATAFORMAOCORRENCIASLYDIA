@@ -3,11 +3,15 @@ import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import ProfessorView from './components/ProfessorView';
-import { Incident, View, User, Student } from './types';
+import ResetPassword from './components/ResetPassword';
+import { Incident, User, Student } from './types';
+
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { STUDENTS_DB } from './studentsData';
 import { saveToGoogleSheets } from './services/sheetsService';
 import { isProfessorRegistered } from './professorsData';
+
+type View = 'login' | 'dashboard' | 'resetPassword';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('login');
@@ -26,6 +30,18 @@ const App: React.FC = () => {
 
       if (isSupabaseConfigured && supabase) {
         try {
+          // Detectar se é um link de reset de senha
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const recoveryToken = hashParams.get('access_token');
+          const tokenType = hashParams.get('type');
+
+          if (recoveryToken && tokenType === 'recovery') {
+            console.log('🔐 [APP] Link de reset de senha detectado');
+            setView('resetPassword');
+            setLoading(false);
+            return;
+          }
+
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             const email = session.user.email!.toLowerCase();
@@ -195,6 +211,30 @@ const App: React.FC = () => {
   }
 
   if (view === 'login') return <Login onLogin={u => { setUser(u); setView('dashboard'); }} />;
+
+  if (view === 'resetPassword') {
+    return (
+      <ResetPassword
+        onComplete={async () => {
+          // Após resetar senha, fazer logout e voltar para login
+          if (isSupabaseConfigured && supabase) {
+            await supabase.auth.signOut();
+          }
+          // Limpar hash da URL
+          window.history.replaceState(null, '', window.location.pathname);
+          setView('login');
+        }}
+        onCancel={async () => {
+          // Cancelar reset, fazer logout e voltar para login
+          if (isSupabaseConfigured && supabase) {
+            await supabase.auth.signOut();
+          }
+          window.history.replaceState(null, '', window.location.pathname);
+          setView('login');
+        }}
+      />
+    );
+  }
 
   const commonProps = {
     user: user!,

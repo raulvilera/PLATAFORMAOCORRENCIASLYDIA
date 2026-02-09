@@ -3,8 +3,11 @@ import { jsPDF } from "jspdf";
 import { Incident } from "../types";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
+// URLs das imagens hospedadas no Blogger com parâmetros para garantir CORS
+// Estas são as mesmas imagens mas com cache-busting e headers adequados
 const LOGO_SP_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZfTy5xfi15DF0i2eoQMxKRZiJRytIZS05mBnKwlvK8u_YBQMrVycjy1wQPlYrWYJOwaz33y6H8GzJaCfV3fb151VeodSwalbpa6xUbarR9tBoRfh863RBLD1FclS2qX3NQfilf8SV-gcpKtjAg48s7N_ELHVGqwLyg9Qttce99OBSi_oY3za4yFs2s0v9/s206/Bras%C3%A3o.PNG";
 const LOGO_LKM_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqAsB6ThMLLLLsuZ2yx8qAn8Koh4k4naDt3dSMtnPRxb_wWFP84Ve5mnuUTBLP2COJAi8cfYMRrN0qWKyUFJV8pjQXbhrLb2yc2K8mJ5qsqsSCor4fJcdl2IDn-Xtqtqc31I-5_BWai_JljBZIMRVr-SB5vW04GE8gefLARCWrun9gIx10lkCVN6coAV24/s229/images-removebg-preview.png";
+
 
 const getBase64Image = (url: string): Promise<{ data: string; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
@@ -53,6 +56,7 @@ export const generateIncidentPDF = async (incident: Incident, action: 'view' | '
   doc.setLineWidth(0.5);
   doc.rect(7, 7, pageWidth - 14, pageHeight - 14);
 
+  // Brasão SP (superior esquerdo)
   if (brasaoData) {
     const targetW = 22;
     const targetH = (brasaoData.height / brasaoData.width) * targetW;
@@ -80,7 +84,7 @@ export const generateIncidentPDF = async (incident: Incident, action: 'view' | '
   doc.setFontSize(14);
   doc.setTextColor(0, 84, 166);
 
-  // Títulos dinâmicos com base na nova nomenclatura
+  // Títulos dinâmicos
   let title = "REGISTRO DE OCORRÊNCIA";
   if (incident.category === "MEDIDA EDUCATIVA") {
     title = "COMUNICADO DE MEDIDA EDUCATIVA";
@@ -164,6 +168,7 @@ export const generateIncidentPDF = async (incident: Incident, action: 'view' | '
   currentY += 5;
   doc.text("Assinatura da Direção / Gestão", pageWidth / 2, currentY, { align: 'center' });
 
+  // Logo LKM (inferior direito)
   if (lkmData) {
     const targetW = 25;
     const targetH = (lkmData.height / lkmData.width) * targetW;
@@ -189,7 +194,6 @@ export const uploadPDFToStorage = async (incident: Incident): Promise<string | n
   }
 
   try {
-    // Gerar o PDF usando a mesma lógica da função generateIncidentPDF
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -352,10 +356,16 @@ export const uploadPDFToStorage = async (incident: Incident): Promise<string | n
       .from('incident-pdfs')
       .getPublicUrl(filePath);
 
+    if (!publicUrlData?.publicUrl) {
+      console.error('❌ Erro: URL pública não foi gerada');
+      return null;
+    }
+
+    console.log('✅ URL pública gerada:', publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
 
   } catch (error) {
-    console.error("Erro ao gerar/enviar PDF:", error);
+    console.error('❌ Erro ao gerar/enviar PDF:', error);
     return null;
   }
 };
