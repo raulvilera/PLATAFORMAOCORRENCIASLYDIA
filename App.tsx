@@ -8,7 +8,7 @@ import { Incident, User, Student } from './types';
 
 import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { STUDENTS_DB } from './studentsData';
-import { saveToGoogleSheets } from './services/sheetsService';
+import { saveToGoogleSheets, loadStudentsFromSheets } from './services/sheetsService';
 import { isProfessorRegistered } from './professorsData';
 
 // E-mails de gestão permitidos
@@ -83,9 +83,48 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const loadStudentsData = async () => {
-      let finalStudents: Student[] = STUDENTS_DB;
+      let finalStudents: Student[] = [];
+      let loadedFromSheets = false;
 
-      if (isSupabaseConfigured && supabase) {
+      // 1. Tentar carregar do Google Sheets primeiro (fonte primária)
+      try {
+        const sheetsStudents = await loadStudentsFromSheets();
+        if (sheetsStudents.length > 0) {
+          finalStudents = sheetsStudents;
+          loadedFromSheets = true;
+          console.log(`✅ Google Sheets: Carregados ${sheetsStudents.length} alunos`);
+
+          // 2. Sincronizar com Supabase (cache)
+          if (isSupabaseConfigured && supabase) {
+            try {
+              // Limpar tabela students
+              await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+              // Inserir novos dados
+              const studentsToInsert = sheetsStudents.map((s, index) => ({
+                id: `sheet-${Date.now()}-${index}`,
+                nome: s.nome,
+                ra: s.ra,
+                turma: s.turma
+              }));
+
+              const { error } = await supabase.from('students').insert(studentsToInsert);
+              if (!error) {
+                console.log('✅ Supabase: Dados sincronizados');
+              } else {
+                console.warn('⚠️ Supabase: Erro ao sincronizar:', error);
+              }
+            } catch (syncError) {
+              console.warn('⚠️ Supabase: Falha na sincronização:', syncError);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Google Sheets: Falha ao carregar, tentando Supabase...');
+      }
+
+      // 3. Fallback: Supabase (cache)
+      if (!loadedFromSheets && isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase.from('students').select('*');
           if (!error && data && data.length > 0) {
@@ -95,14 +134,22 @@ const App: React.FC = () => {
               ra: s.ra,
               turma: s.turma
             }));
+            console.log(`✅ Supabase: Carregados ${finalStudents.length} alunos (cache)`);
           }
         } catch (e) {
-          console.warn("Usando base de alunos local.");
+          console.warn('⚠️ Supabase: Falha ao carregar');
         }
+      }
+
+      // 4. Último fallback: Dados locais
+      if (finalStudents.length === 0) {
+        finalStudents = STUDENTS_DB;
+        console.log(`⚠️ Local: Usando ${STUDENTS_DB.length} alunos (studentsData.ts)`);
       }
 
       setStudents(finalStudents);
 
+      // Gerar lista de turmas dinamicamente
       const uniqueClasses = Array.from(new Set(finalStudents.map(s => s.turma)));
       const sortedClasses = uniqueClasses.sort((a, b) => {
         const isAno_a = a.includes('Ano');

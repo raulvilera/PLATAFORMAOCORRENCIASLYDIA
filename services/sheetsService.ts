@@ -1,10 +1,39 @@
 
-import { Incident } from '../types';
+import { Incident, Student } from '../types';
 
 /**
  * URL do seu Google Apps Script implantado como Web App.
  */
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOzHSZvLjsXhWjQeE9wwbP7SoKxUrD35IlHVP4ONfG-oXcZosjINKB-syu8NBBsE4_/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0heHXQmTyOmXGMYBdd0eik4E1mBrMsh06agX-QtB6craksSmRzSheU36zZywyP9y0tg/exec';
+
+/**
+ * Carrega a lista de alunos da planilha Google Sheets.
+ * Aba: BANCODEDADOSGERAL
+ */
+export const loadStudentsFromSheets = async (): Promise<Student[]> => {
+  try {
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheetName=BANCODEDADOSGERAL`, {
+      method: 'GET',
+      cache: 'no-cache',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.students)) {
+      console.log(`✅ Google Sheets: Carregados ${data.students.length} alunos`);
+      return data.students;
+    }
+
+    throw new Error('Formato de resposta inválido do Google Sheets');
+  } catch (error) {
+    console.error('❌ Erro ao carregar alunos do Google Sheets:', error);
+    return [];
+  }
+};
 
 export const saveToGoogleSheets = async (incident: Incident) => {
   try {
