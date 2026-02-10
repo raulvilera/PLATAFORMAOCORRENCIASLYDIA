@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📧 Guia SMTP - cadastroslkm@gmail.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .steps {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .step {
+            margin-bottom: 20px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .step::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 25px;
+            height: 25px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .config-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .config-box .field {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .config-box .label {
+            color: #81e6d9;
+            font-weight: bold;
+        }
+
+        .config-box .value {
+            color: #fbd38d;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checklist li:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .checklist li::before {
+            content: "☐ ";
+            font-size: 1.5em;
+            margin-right: 10px;
+            color: #999;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 Guia Completo: Configuração SMTP</h1>
+            <p>Portal Lydia Kitz - E-mail de Cadastros</p>
+        </div>
+
+        <div class="content">
+            <!-- Objetivo -->
+            <div class="section">
+                <h2 class="section-title">🎯 Objetivo</h2>
+                <p>Configurar o e-mail <span class="highlight">cadastroslkm@gmail.com</span> para enviar notificações de
+                    recuperação de senha e confirmação de cadastro aos professores e gestores do Portal Lydia Kitz.</p>
+            </div>
+
+            <!-- Parte 1: Gmail -->
+            <div class="section">
+                <h2 class="section-title">📋 Parte 1: Gerar Senha de App no Gmail</h2>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ IMPORTANTE:</strong> Você precisará ter acesso à conta
+                    <code>cadastroslkm@gmail.com</code> para completar esta etapa.
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Passo 1: Ativar Verificação em 2 Etapas</h3>
+                <div class="steps">
+                    <div class="step">Acesse: <a href="https://myaccount.google.com/security"
+                            target="_blank">https://myaccount.google.com/security</a></div>
+                    <div class="step">Faça login com <code>cadastroslkm@gmail.com</code></div>
+                    <div class="step">Role até encontrar <strong>"Verificação em duas etapas"</strong></div>
+                    <div class="step">Clique em <strong>"Verificação em duas etapas"</strong></div>
+                    <div class="step">Siga as instruções para ativar (se ainda não estiver ativada)</div>
+                    <div class="step">Você precisará confirmar com SMS ou outro método</div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Passo 2: Criar Senha de App</h3>
+                <div class="steps">
+                    <div class="step">Ainda em <a href="https://myaccount.google.com/security"
+                            target="_blank">https://myaccount.google.com/security</a></div>
+                    <div class="step">Role até <strong>"Verificação em duas etapas"</strong> e clique</div>
+                    <div class="step">Role até o final da página</div>
+                    <div class="step">Encontre <strong>"Senhas de app"</strong> e clique</div>
+                    <div class="step">Pode pedir para fazer login novamente - faça</div>
+                    <div class="step">Em <strong>"Selecionar app"</strong>, escolha <strong>"Outro (nome
+                            personalizado)"</strong></div>
+                    <div class="step">Digite: <code>Supabase - Portal Lydia Kitz</code></div>
+                    <div class="step">Clique em <strong>"Gerar"</strong></div>
+                    <div class="step"><strong>COPIE A SENHA DE 16 CARACTERES</strong> que aparecer</div>
+                </div>
+
+                <div class="alert alert-danger">
+                    <strong>🚨 GUARDE BEM ESTA SENHA!</strong> Ela só aparece uma vez!<br>
+                    Formato: <code>xxxx xxxx xxxx xxxx</code> (sem espaços na hora de usar)
+                </div>
+            </div>
+
+            <!-- Parte 2: Supabase -->
+            <div class="section">
+                <h2 class="section-title">📋 Parte 2: Configurar SMTP no Supabase</h2>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Passo 1: Acessar Configurações do Supabase</h3>
+                <div class="steps">
+                    <div class="step">Acesse: <a
+                            href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/settings/auth"
+                            target="_blank">Configurações de Auth no Supabase</a></div>
+                    <div class="step">Faça login na sua conta Supabase</div>
+                    <div class="step">Role até encontrar a seção <strong>"SMTP Settings"</strong></div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Passo 2: Preencher Configurações SMTP</h3>
+                <p>Preencha os campos <strong>exatamente</strong> como abaixo:</p>
+
+                <div class="config-box">
+                    <div class="field">
+                        <span class="label">Enable Custom SMTP:</span>
+                        <span class="value">[✓] Habilitado</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Host:</span>
+                        <span class="value">smtp.gmail.com</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Port:</span>
+                        <span class="value">587</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Username:</span>
+                        <span class="value">cadastroslkm@gmail.com</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Password:</span>
+                        <span class="value">[Cole a senha de app aqui - SEM ESPAÇOS]</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Sender Email:</span>
+                        <span class="value">cadastroslkm@gmail.com</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Sender Name:</span>
+                        <span class="value">Portal Lydia Kitz - Cadastros</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>💡 Detalhes de Cada Campo:</strong>
+                    <table class="table" style="margin-top: 15px;">
+                        <tr>
+                            <th>Campo</th>
+                            <th>Valor</th>
+                            <th>Observação</th>
+                        </tr>
+                        <tr>
+                            <td>Enable Custom SMTP</td>
+                            <td>✓ Habilitado</td>
+                            <td>Marque a caixa</td>
+                        </tr>
+                        <tr>
+                            <td>Host</td>
+                            <td><code>smtp.gmail.com</code></td>
+                            <td>Servidor SMTP do Gmail</td>
+                        </tr>
+                        <tr>
+                            <td>Port</td>
+                            <td><code>587</code></td>
+                            <td>Porta TLS (recomendada)</td>
+                        </tr>
+                        <tr>
+                            <td>Username</td>
+                            <td><code>cadastroslkm@gmail.com</code></td>
+                            <td>E-mail completo</td>
+                        </tr>
+                        <tr>
+                            <td>Password</td>
+                            <td>[Senha de app]</td>
+                            <td>Cole SEM ESPAÇOS<br>Ex: <code>abcdefghijklmnop</code></td>
+                        </tr>
+                        <tr>
+                            <td>Sender Email</td>
+                            <td><code>cadastroslkm@gmail.com</code></td>
+                            <td>E-mail que aparece como remetente</td>
+                        </tr>
+                        <tr>
+                            <td>Sender Name</td>
+                            <td><code>Portal Lydia Kitz - Cadastros</code></td>
+                            <td>Nome que aparece no e-mail</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Passo 3: Salvar Configurações</h3>
+                <div class="steps">
+                    <div class="step">Clique no botão <strong>"Save"</strong> no final da seção</div>
+                    <div class="step">Aguarde a confirmação de que foi salvo com sucesso</div>
+                </div>
+            </div>
+
+            <!-- Parte 3: Testes -->
+            <div class="section">
+                <h2 class="section-title">📋 Parte 3: Testar se Está Funcionando</h2>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Teste 1: Interface de Login</h3>
+                <div class="steps">
+                    <div class="step">Abra o portal em: <a href="https://plataforma-ocorrencias-lydia.netlify.app/"
+                            target="_blank">Portal Lydia Kitz</a></div>
+                    <div class="step">Clique em <strong>"Esqueci minha senha"</strong></div>
+                    <div class="step">Digite um e-mail de professor cadastrado</div>
+                    <div class="step">Clique em <strong>"Enviar link de recuperação"</strong></div>
+                    <div class="step">Verifique a caixa de entrada do e-mail do professor</div>
+                    <div class="step">O e-mail deve chegar em 1-2 minutos</div>
+                    <div class="step">Verifique também a pasta de <strong>SPAM/Lixeira</strong></div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Teste 2: Verificar Logs do Supabase</h3>
+                <div class="steps">
+                    <div class="step">Acesse: <a
+                            href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/logs/auth-logs"
+                            target="_blank">Logs de Autenticação</a></div>
+                    <div class="step">Procure por eventos recentes de <code>password_recovery</code></div>
+                    <div class="step">Verifique se há erros relacionados ao SMTP</div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✅ Confirmação de Sucesso</strong><br><br>
+                    Você saberá que está funcionando quando:<br>
+                    ✅ E-mail de recuperação chegar na caixa de entrada do professor<br>
+                    ✅ Remetente aparecer como "Portal Lydia Kitz - Cadastros" ou cadastroslkm@gmail.com<br>
+                    ✅ Link de redefinição funcionar ao clicar
+                </div>
+            </div>
+
+            <!-- Problemas e Soluções -->
+            <div class="section">
+                <h2 class="section-title">⚠️ Possíveis Problemas e Soluções</h2>
+
+                <div class="alert alert-danger" style="margin-bottom: 15px;">
+                    <strong>Problema 1: "Autenticação SMTP falhou"</strong><br><br>
+                    <strong>Solução:</strong><br>
+                    • Verifique se a senha de app foi copiada corretamente (sem espaços)<br>
+                    • Confirme que a verificação em 2 etapas está ativada no Gmail<br>
+                    • Tente gerar uma nova senha de app
+                </div>
+
+                <div class="alert alert-warning" style="margin-bottom: 15px;">
+                    <strong>Problema 2: E-mail cai no SPAM</strong><br><br>
+                    <strong>Solução:</strong><br>
+                    • É normal na primeira vez<br>
+                    • Peça aos professores para marcarem como "Não é spam"<br>
+                    • Com o tempo, o Gmail aprende e para de marcar como spam
+                </div>
+
+                <div class="alert alert-danger" style="margin-bottom: 15px;">
+                    <strong>Problema 3: E-mail não chega</strong><br><br>
+                    <strong>Solução:</strong><br>
+                    • Verifique os logs do Supabase<br>
+                    • Confirme que o SMTP está habilitado<br>
+                    • Tente reenviar o e-mail de recuperação<br>
+                    • Verifique se a conta Gmail está ativa e sem bloqueios
+                </div>
+
+                <div class="alert alert-danger" style="margin-bottom: 15px;">
+                    <strong>Problema 4: "Senha de app inválida"</strong><br><br>
+                    <strong>Solução:</strong><br>
+                    • Gere uma nova senha de app<br>
+                    • Exclua a antiga (se existir)<br>
+                    • Configure novamente no Supabase com a nova senha
+                </div>
+            </div>
+
+            <!-- Checklist -->
+            <div class="section">
+                <h2 class="section-title">📝 Checklist de Configuração</h2>
+                <p>Use este checklist para garantir que tudo foi feito:</p>
+                <ul class="checklist">
+                    <li>Verificação em 2 etapas ativada no Gmail</li>
+                    <li>Senha de app gerada</li>
+                    <li>Senha de app copiada (sem espaços)</li>
+                    <li>SMTP habilitado no Supabase</li>
+                    <li>Host configurado: smtp.gmail.com</li>
+                    <li>Port configurado: 587</li>
+                    <li>Username configurado: cadastroslkm@gmail.com</li>
+                    <li>Password colado (senha de app sem espaços)</li>
+                    <li>Sender Email configurado: cadastroslkm@gmail.com</li>
+                    <li>Sender Name configurado: Portal Lydia Kitz - Cadastros</li>
+                    <li>Configurações salvas</li>
+                    <li>Teste de recuperação de senha realizado</li>
+                    <li>E-mail recebido com sucesso</li>
+                </ul>
+            </div>
+
+            <!-- Links Rápidos -->
+            <div class="section" style="text-align: center; padding: 30px 0;">
+                <h2 class="section-title">🔗 Links Rápidos</h2>
+                <a href="https://myaccount.google.com/security" target="_blank" class="btn">🔐 Segurança do Gmail</a>
+                <a href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/settings/auth" target="_blank"
+                    class="btn">⚙️ Config Supabase</a>
+                <a href="https://plataforma-ocorrencias-lydia.netlify.app/" target="_blank" class="btn">🚀 Portal Lydia
+                    Kitz</a>
+                <a href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/logs/auth-logs" target="_blank"
+                    class="btn">📊 Logs</a>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; padding: 40px 0; color: #999;">
+                <p>🎉 <strong>Pronto!</strong> Após seguir todos os passos, o sistema estará enviando e-mails de
+                    recuperação de senha e confirmação de cadastro.</p>
+                <p style="margin-top: 10px;"><strong>Remetente:</strong> Portal Lydia Kitz - Cadastros
+                    (cadastroslkm@gmail.com)</p>
+                <p style="margin-top: 20px; font-size: 0.9em;">Boa sorte! 🚀</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Adicionar interatividade ao checklist
+        document.querySelectorAll('.checklist li').forEach(item => {
+            item.addEventListener('click', function () {
+                this.style.textDecoration = this.style.textDecoration === 'line-through' ? 'none' : 'line-through';
+                this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5';
+                this.style.borderColor = this.style.borderColor === 'rgb(40, 167, 69)' ? '#e0e0e0' : '#28a745';
+            });
+        });
+    </script>
+</body>
+
+</html>

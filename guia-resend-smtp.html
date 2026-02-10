@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📧 Guia Resend SMTP - Portal Lydia Kitz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .steps {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .step {
+            margin-bottom: 20px;
+            padding-left: 40px;
+            position: relative;
+            line-height: 1.8;
+        }
+
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .config-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .config-box .field {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .config-box .label {
+            color: #81e6d9;
+            font-weight: bold;
+        }
+
+        .config-box .value {
+            color: #fbd38d;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-card {
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+        }
+
+        .comparison-card.winner {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .comparison-card h3 {
+            margin-bottom: 15px;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checklist li:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .checklist li::before {
+            content: "☐ ";
+            font-size: 1.5em;
+            margin-right: 10px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 Guia Completo: Resend SMTP</h1>
+            <p>Configuração Profissional de E-mail</p>
+            <span class="badge">✨ RECOMENDADO - Mais Fácil que Gmail</span>
+        </div>
+
+        <div class="content">
+            <!-- Por que Resend -->
+            <div class="section">
+                <h2 class="section-title">🎯 Por Que Usar Resend?</h2>
+
+                <div class="comparison">
+                    <div class="comparison-card">
+                        <h3>❌ Gmail (Senha de App)</h3>
+                        <ul style="line-height: 2;">
+                            <li>Requer verificação em 2 etapas</li>
+                            <li>Senhas de app nem sempre disponíveis</li>
+                            <li>Limite: ~500 emails/dia</li>
+                            <li>Pode cair em SPAM facilmente</li>
+                            <li>Configuração complexa</li>
+                        </ul>
+                    </div>
+
+                    <div class="comparison-card winner">
+                        <h3>✅ Resend (Recomendado)</h3>
+                        <ul style="line-height: 2;">
+                            <li><strong>3.000 emails/mês GRÁTIS</strong></li>
+                            <li>Configuração em 5 minutos</li>
+                            <li>Melhor entregabilidade</li>
+                            <li>Interface moderna e simples</li>
+                            <li>Perfeito para aplicações</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✨ Vantagem Principal:</strong> Com Resend você usa o domínio
+                    <code>cadastroslkm@gmail.com</code> como remetente, mas com infraestrutura profissional de envio!
+                </div>
+            </div>
+
+            <!-- Parte 1: Criar Conta -->
+            <div class="section">
+                <h2 class="section-title">📋 Parte 1: Criar Conta no Resend</h2>
+
+                <div class="steps">
+                    <div class="step" data-step="1">
+                        Acesse: <a href="https://resend.com/signup"
+                            target="_blank"><strong>https://resend.com/signup</strong></a>
+                    </div>
+                    <div class="step" data-step="2">
+                        Clique em <strong>"Sign up"</strong>
+                    </div>
+                    <div class="step" data-step="3">
+                        Você pode se cadastrar com:
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>✉️ E-mail (cadastroslkm@gmail.com)</li>
+                            <li>🔐 Ou login com Google/GitHub</li>
+                        </ul>
+                    </div>
+                    <div class="step" data-step="4">
+                        Confirme seu e-mail (se cadastrou com e-mail)
+                    </div>
+                    <div class="step" data-step="5">
+                        Faça login no Resend: <a href="https://resend.com/login"
+                            target="_blank">https://resend.com/login</a>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>💡 Dica:</strong> É recomendado usar <strong>Sign up with Google</strong> com a conta
+                    cadastroslkm@gmail.com para facilitar!
+                </div>
+            </div>
+
+            <!-- Parte 2: Gerar API Key -->
+            <div class="section">
+                <h2 class="section-title">🔑 Parte 2: Gerar API Key</h2>
+
+                <div class="steps">
+                    <div class="step" data-step="1">
+                        Após fazer login, você estará no <strong>Dashboard</strong>
+                    </div>
+                    <div class="step" data-step="2">
+                        No menu lateral, clique em <strong>"API Keys"</strong>
+                    </div>
+                    <div class="step" data-step="3">
+                        Clique no botão <strong>"Create API Key"</strong>
+                    </div>
+                    <div class="step" data-step="4">
+                        Dê um nome para a chave: <code>Supabase - Portal Lydia Kitz</code>
+                    </div>
+                    <div class="step" data-step="5">
+                        Selecione as permissões: <strong>"Sending access"</strong> (padrão)
+                    </div>
+                    <div class="step" data-step="6">
+                        Clique em <strong>"Create"</strong>
+                    </div>
+                    <div class="step" data-step="7">
+                        <strong>COPIE A API KEY</strong> que aparecerá (começa com <code>re_...</code>)
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ IMPORTANTE:</strong> Guarde bem essa API Key! Ela só aparece uma vez. Se perder, terá que
+                    criar uma nova.
+                </div>
+            </div>
+
+            <!-- Parte 3: Configurar no Supabase -->
+            <div class="section">
+                <h2 class="section-title">⚙️ Parte 3: Configurar SMTP no Supabase</h2>
+
+                <div class="steps">
+                    <div class="step" data-step="1">
+                        Acesse: <a href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/settings/auth"
+                            target="_blank">Configurações Auth no Supabase</a>
+                    </div>
+                    <div class="step" data-step="2">
+                        Role até a seção <strong>"SMTP Settings"</strong>
+                    </div>
+                    <div class="step" data-step="3">
+                        Marque <strong>"Enable Custom SMTP"</strong>
+                    </div>
+                    <div class="step" data-step="4">
+                        Preencha com as configurações abaixo
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 15px 0; color: #667eea;">Configurações SMTP do Resend:</h3>
+
+                <div class="config-box">
+                    <div class="field">
+                        <span class="label">Enable Custom SMTP:</span>
+                        <span class="value">[✓] Habilitado</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Host:</span>
+                        <span class="value">smtp.resend.com</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Port:</span>
+                        <span class="value">587</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Username:</span>
+                        <span class="value">resend</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Password:</span>
+                        <span class="value">[Cole sua API Key aqui - começa com re_...]</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Sender Email:</span>
+                        <span class="value">onboarding@resend.dev</span>
+                    </div>
+                    <div class="field">
+                        <span class="label">Sender Name:</span>
+                        <span class="value">Portal Lydia Kitz</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>📧 Sobre o Sender Email:</strong><br><br>
+                    Inicialmente, use <code>onboarding@resend.dev</code> (domínio de teste do Resend).<br>
+                    Depois você pode adicionar um domínio personalizado se quiser usar outro e-mail como remetente.
+                </div>
+
+                <div class="steps" style="margin-top: 20px;">
+                    <div class="step" data-step="5">
+                        Clique em <strong>"Save"</strong> no final da página
+                    </div>
+                    <div class="step" data-step="6">
+                        Aguarde a confirmação de sucesso
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parte 4: Testar -->
+            <div class="section">
+                <h2 class="section-title">🧪 Parte 4: Testar o Envio</h2>
+
+                <div class="steps">
+                    <div class="step" data-step="1">
+                        Abra o portal: <a href="https://plataforma-ocorrencias-lydia.netlify.app/"
+                            target="_blank">Portal Lydia Kitz</a>
+                    </div>
+                    <div class="step" data-step="2">
+                        Clique em <strong>"Esqueci minha senha"</strong>
+                    </div>
+                    <div class="step" data-step="3">
+                        Digite um e-mail de teste (professor cadastrado)
+                    </div>
+                    <div class="step" data-step="4">
+                        Clique em <strong>"Enviar link de recuperação"</strong>
+                    </div>
+                    <div class="step" data-step="5">
+                        Verifique a caixa de entrada do e-mail
+                    </div>
+                    <div class="step" data-step="6">
+                        O e-mail deve chegar em menos de 1 minuto!
+                    </div>
+                </div>
+
+                <div class="alert alert-success">
+                    <strong>✅ Confirmação de Sucesso:</strong><br><br>
+                    ✅ E-mail chega rapidamente (menos de 1 minuto)<br>
+                    ✅ Remetente aparece como "Portal Lydia Kitz"<br>
+                    ✅ Não cai em SPAM (melhor entregabilidade)<br>
+                    ✅ Link de redefinição funciona perfeitamente
+                </div>
+            </div>
+
+            <!-- Monitoramento -->
+            <div class="section">
+                <h2 class="section-title">📊 Monitorar Envios (Opcional)</h2>
+
+                <p style="margin-bottom: 20px;">Você pode acompanhar todos os e-mails enviados no painel do Resend:</p>
+
+                <div class="steps">
+                    <div class="step" data-step="1">
+                        Acesse: <a href="https://resend.com/emails" target="_blank">https://resend.com/emails</a>
+                    </div>
+                    <div class="step" data-step="2">
+                        Veja todos os e-mails enviados, abertos, clicados, etc.
+                    </div>
+                    <div class="step" data-step="3">
+                        Monitore erros de entrega em tempo real
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checklist -->
+            <div class="section">
+                <h2 class="section-title">📝 Checklist Final</h2>
+                <ul class="checklist">
+                    <li>Conta criada no Resend</li>
+                    <li>API Key gerada e copiada</li>
+                    <li>SMTP habilitado no Supabase</li>
+                    <li>Host: smtp.resend.com</li>
+                    <li>Port: 587</li>
+                    <li>Username: resend</li>
+                    <li>Password: API Key (re_...)</li>
+                    <li>Sender Email: onboarding@resend.dev</li>
+                    <li>Sender Name: Portal Lydia Kitz</li>
+                    <li>Configurações salvas</li>
+                    <li>Teste de recuperação realizado</li>
+                    <li>E-mail recebido com sucesso</li>
+                </ul>
+            </div>
+
+            <!-- Links Rápidos -->
+            <div class="section" style="text-align: center; padding: 30px 0;">
+                <h2 class="section-title">🔗 Links Rápidos</h2>
+                <a href="https://resend.com/signup" target="_blank" class="btn btn-success">🚀 Criar Conta Resend</a>
+                <a href="https://resend.com/api-keys" target="_blank" class="btn">🔑 Gerar API Key</a>
+                <a href="https://app.supabase.com/project/zvuxzrfbmmbhuhwaofrn/settings/auth" target="_blank"
+                    class="btn">⚙️ Config Supabase</a>
+                <a href="https://resend.com/emails" target="_blank" class="btn">📊 Ver E-mails Enviados</a>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; padding: 40px 0; color: #999; border-top: 1px solid #eee;">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">🎉 <strong>Pronto!</strong></p>
+                <p>Seu sistema está configurado com um serviço de e-mail profissional!</p>
+                <p style="margin-top: 20px;"><strong>Limite Gratuito:</strong> 3.000 e-mails/mês</p>
+                <p style="margin-top: 5px;"><strong>Remetente:</strong> Portal Lydia Kitz (onboarding@resend.dev)</p>
+                <p style="margin-top: 20px; font-size: 0.9em;">Boa sorte! 🚀</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Adicionar interatividade ao checklist
+        document.querySelectorAll('.checklist li').forEach(item => {
+            item.addEventListener('click', function () {
+                this.style.textDecoration = this.style.textDecoration === 'line-through' ? 'none' : 'line-through';
+                this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5';
+                this.style.borderColor = this.style.borderColor === 'rgb(40, 167, 69)' ? '#e0e0e0' : '#28a745';
+            });
+        });
+    </script>
+</body>
+
+</html>
