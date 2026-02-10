@@ -37,7 +37,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   // E-mails de gestão permitidos
   const MANAGEMENT_EMAILS = [
     'gestao@escola.com',
-    'cadastroslkm@gmail.com'
+    'cadastroslkm@gmail.com',
+    'vilera@prof.educacao.sp.gov.br'
   ];
 
   const resolveEmailAlias = (email: string): string => {
@@ -47,9 +48,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const validateInstitutionalEmail = (email: string) => {
     const lowerEmail = email.toLowerCase().trim();
+    // E-mails de gestão são sempre válidos
+    if (MANAGEMENT_EMAILS.includes(lowerEmail)) {
+      return true;
+    }
+    // Outros e-mails devem ser institucionais
     return lowerEmail.endsWith('@prof.educacao.sp.gov.br') ||
-      lowerEmail.endsWith('@professor.educacao.sp.gov.br') ||
-      MANAGEMENT_EMAILS.includes(lowerEmail);
+      lowerEmail.endsWith('@professor.educacao.sp.gov.br');
   };
 
   const handleLogin = async (e: React.FormEvent) => {

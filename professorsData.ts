@@ -7,8 +7,9 @@ export interface ProfessorData {
 }
 
 export const PROFESSORS_DB: ProfessorData[] = [
-    // Conta de gestão
+    // Contas de gestão
     { email: 'gestao@escola.com', nome: 'GESTÃO ESCOLAR' },
+    { email: 'vilera@prof.educacao.sp.gov.br', nome: 'RAUL VILERA - GESTÃO' },
 
     // Professores cadastrados - E-mails Microsoft
     { email: 'aex@professor.educacao.sp.gov.br', nome: 'AEX LUTTI PEREIRA MARANHÃO' },

@@ -11,7 +11,18 @@ import { STUDENTS_DB } from './studentsData';
 import { saveToGoogleSheets } from './services/sheetsService';
 import { isProfessorRegistered } from './professorsData';
 
+// E-mails de gestão permitidos
+const MANAGEMENT_EMAILS = [
+  'gestao@escola.com',
+  'cadastroslkm@gmail.com',
+  'vilera@prof.educacao.sp.gov.br'
+];
+
+// E-mail com acesso dual (gestor + professor)
+const DUAL_ACCESS_EMAIL = 'vilera@prof.educacao.sp.gov.br';
+
 type View = 'login' | 'dashboard' | 'resetPassword';
+type ViewMode = 'gestor' | 'professor';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('login');
@@ -20,6 +31,9 @@ const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Estado para controlar visualização (gestor/professor) para usuários com acesso dual
+  const [viewMode, setViewMode] = useState<ViewMode>('gestor');
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
@@ -54,7 +68,7 @@ const App: React.FC = () => {
               return;
             }
 
-            const role = email === 'gestao@escola.com' ? 'gestor' : 'professor';
+            const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
             setUser({ email, role });
             setView('dashboard');
           }
@@ -236,6 +250,12 @@ const App: React.FC = () => {
     );
   }
 
+  const hasDualAccess = user?.email === DUAL_ACCESS_EMAIL;
+
+  const handleToggleView = () => {
+    setViewMode(prev => prev === 'gestor' ? 'professor' : 'gestor');
+  };
+
   const commonProps = {
     user: user!,
     incidents: incidents,
@@ -247,9 +267,26 @@ const App: React.FC = () => {
     onOpenSearch: () => setSearchModalOpen(true)
   };
 
+  // Determina qual visualização renderizar
+  const shouldShowGestorView = hasDualAccess ? viewMode === 'gestor' : user?.role === 'gestor';
+
   return (
     <div className="relative min-h-screen bg-[#001a35]">
-      {user?.role === 'gestor' ? <Dashboard {...commonProps} /> : <ProfessorView {...commonProps} />}
+      {/* Botão de alternância para usuários com acesso dual */}
+      {hasDualAccess && (
+        <button
+          onClick={handleToggleView}
+          className="fixed top-4 right-4 z-50 bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-wider shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+          title={`Alternar para área ${viewMode === 'gestor' ? 'do professor' : 'da gestão'}`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          {viewMode === 'gestor' ? 'Ver como Professor' : 'Ver como Gestão'}
+        </button>
+      )}
+
+      {shouldShowGestorView ? <Dashboard {...commonProps} /> : <ProfessorView {...commonProps} />}
     </div>
   );
 };
