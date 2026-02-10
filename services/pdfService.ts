@@ -3,10 +3,10 @@ import { jsPDF } from "jspdf";
 import { Incident } from "../types";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
-// URLs das imagens hospedadas no Blogger com parâmetros para garantir CORS
-// Estas são as mesmas imagens mas com cache-busting e headers adequados
-const LOGO_SP_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZfTy5xfi15DF0i2eoQMxKRZiJRytIZS05mBnKwlvK8u_YBQMrVycjy1wQPlYrWYJOwaz33y6H8GzJaCfV3fb151VeodSwalbpa6xUbarR9tBoRfh863RBLD1FclS2qX3NQfilf8SV-gcpKtjAg48s7N_ELHVGqwLyg9Qttce99OBSi_oY3za4yFs2s0v9/s206/Bras%C3%A3o.PNG";
-const LOGO_LKM_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqAsB6ThMLLLLsuZ2yx8qAn8Koh4k4naDt3dSMtnPRxb_wWFP84Ve5mnuUTBLP2COJAi8cfYMRrN0qWKyUFJV8pjQXbhrLb2yc2K8mJ5qsqsSCor4fJcdl2IDn-Xtqtqc31I-5_BWai_JljBZIMRVr-SB5vW04GE8gefLARCWrun9gIx10lkCVN6coAV24/s229/images-removebg-preview.png";
+// URLs das imagens hospedadas no Supabase Storage
+// Estas imagens estão no bucket público 'incident-pdfs' na pasta 'assets'
+const LOGO_SP_URL = "https://zvuxzrfbmmbhuhwaofrn.supabase.co/storage/v1/object/public/incident-pdfs/assets/brasao-sp.png";
+const LOGO_LKM_URL = "https://zvuxzrfbmmbhuhwaofrn.supabase.co/storage/v1/object/public/incident-pdfs/assets/logo-lkm.png";
 
 
 const getBase64Image = (url: string): Promise<{ data: string; width: number; height: number }> => {
