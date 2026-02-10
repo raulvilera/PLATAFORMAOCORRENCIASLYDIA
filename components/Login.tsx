@@ -34,6 +34,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     'gestao@escola.com': 'vilera@prof.educacao.sp.gov.br'
   };
 
+  // E-mails de gestão permitidos
+  const MANAGEMENT_EMAILS = [
+    'gestao@escola.com',
+    'cadastroslkm@gmail.com'
+  ];
+
   const resolveEmailAlias = (email: string): string => {
     const lowerEmail = email.toLowerCase().trim();
     return EMAIL_ALIASES[lowerEmail] || lowerEmail;
@@ -43,7 +49,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const lowerEmail = email.toLowerCase().trim();
     return lowerEmail.endsWith('@prof.educacao.sp.gov.br') ||
       lowerEmail.endsWith('@professor.educacao.sp.gov.br') ||
-      lowerEmail === 'gestao@escola.com';
+      MANAGEMENT_EMAILS.includes(lowerEmail);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -94,15 +100,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         console.log('✅ [LOGIN] Login bem-sucedido! Usuário:', data.user.email);
 
         // VALIDAÇÃO DE WHITELIST: Verifica o email original (não o alias)
-        if (!isProfessorRegistered(displayEmail)) {
+        // E-mails de gestão são isentos da verificação de whitelist
+        if (!MANAGEMENT_EMAILS.includes(displayEmail) && !isProfessorRegistered(displayEmail)) {
           console.error('❌ [LOGIN] E-mail não cadastrado no sistema:', displayEmail);
           await supabase.auth.signOut(); // Faz logout automático
           throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ CADASTRADO NA PLATAFORMA. CONTATE A GESTÃO PARA AUTORIZAÇÃO.');
         }
 
-        console.log('✅ [LOGIN] Professor cadastrado confirmado!');
+        console.log('✅ [LOGIN] Acesso autorizado!');
         // Define role baseado no email que o usuário digitou (display), não no email real
-        const role = displayEmail === 'gestao@escola.com' ? 'gestor' : 'professor';
+        const role = MANAGEMENT_EMAILS.includes(displayEmail) ? 'gestor' : 'professor';
         onLogin({ email: displayEmail, role }); // Usa o email de display para manter a experiência
       }
 
@@ -149,7 +156,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       if (data.user) {
         // VALIDAÇÃO DE WHITELIST: Verifica se professor está cadastrado
-        if (!isProfessorRegistered(lowerEmail)) {
+        // E-mails de gestão são isentos da verificação de whitelist
+        if (!MANAGEMENT_EMAILS.includes(lowerEmail) && !isProfessorRegistered(lowerEmail)) {
           console.error('❌ [CADASTRO] E-mail não autorizado:', lowerEmail);
           // Remove a conta criada pois não está autorizada
           await supabase.auth.signOut();
@@ -159,7 +167,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Com confirmação de e-mail desabilitada, o login é automático
         console.log('✅ [CADASTRO] Usuário criado e autenticado automaticamente');
         setMessage('CADASTRO REALIZADO! ENTRANDO NO SISTEMA...');
-        const role = lowerEmail === 'gestao@escola.com' ? 'gestor' : 'professor';
+        const role = MANAGEMENT_EMAILS.includes(lowerEmail) ? 'gestor' : 'professor';
         setTimeout(() => onLogin({ email: data.user!.email!, role }), 1000);
       }
 
@@ -185,7 +193,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       // Verifica se o professor está cadastrado antes de enviar reset
-      if (!isProfessorRegistered(lowerEmail)) {
+      // E-mails de gestão são isentos da verificação de whitelist
+      if (!MANAGEMENT_EMAILS.includes(lowerEmail) && !isProfessorRegistered(lowerEmail)) {
         throw new Error('E-MAIL NÃO CADASTRADO NO SISTEMA. CONTATE A GESTÃO.');
       }
 
