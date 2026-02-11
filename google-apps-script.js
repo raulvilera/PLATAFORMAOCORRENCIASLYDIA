@@ -58,45 +58,43 @@ function doGet(e) {
     const subHeaders = data[headerRowIndex + 1] ? data[headerRowIndex + 1].map(h => String(h).toUpperCase().trim()) : [];
     const classBlocks = [];
 
-    // Identifica o início de cada bloco de turma e as colunas NOME e RA dentro dele
+    // Identifica o início de cada bloco de turma
     headers.forEach((h, i) => {
         if (h !== '' && (h.includes('ANO') || h.includes('SERIE') || h.includes('SÉRIE'))) {
-            let nameIdx = -1;
-            let raIdx = -1;
+            // No formato específico da escola:
+            // 1. O Nome do aluno está na MESMA coluna do título da turma (ex: Ano6ºA)
+            // 2. O RA está 3 colunas à direita (ou onde estiver escrito 'RA' no subHeader)
 
-            // Procurar NOME e RA na linha do cabeçalho OU na linha de baixo
-            for (let j = i; j < headers.length; j++) {
-                if (j > i && (headers[j].includes('ANO') || headers[j].includes('SERIE') || headers[j].includes('SÉRIE'))) break;
+            let nameIdx = i; // Por padrão, o nome está na coluna da turma
+            let raIdx = i + 3; // Por padrão, RA está 3 colunas depois
 
-                // Checar na linha atual
-                if (headers[j] === 'NOME' && nameIdx === -1) nameIdx = j;
-                if (headers[j] === 'RA' && raIdx === -1) raIdx = j;
-
-                // Checar na linha de baixo (subHeaders)
-                if (subHeaders[j] === 'NOME' && nameIdx === -1) nameIdx = j;
-                if (subHeaders[j] === 'RA' && raIdx === -1) raIdx = j;
+            // Refinamento: procurar o texto "RA" nas próximas 5 colunas para ter certeza
+            for (let j = i; j < i + 6 && j < headers.length; j++) {
+                if (subHeaders[j] === 'RA' || headers[j] === 'RA') {
+                    raIdx = j;
+                    break;
+                }
             }
 
-            if (nameIdx !== -1) {
-                classBlocks.push({
-                    className: h,
-                    nameIndex: nameIdx,
-                    raIndex: raIdx
-                });
-            }
+            classBlocks.push({
+                className: h,
+                nameIndex: nameIdx,
+                raIndex: raIdx
+            });
         }
     });
 
     const students = [];
-    // Começar a ler as linhas de dados (pula as linhas de cabeçalho detectadas)
-    const dataStartRow = Math.max(headerRowIndex + 1, headerRowIndex + 2); // Pula pelo menos 1 ou 2 se houver subheader
+    // Pula o cabeçalho e o sub-cabeçalho
+    const dataStartRow = headerRowIndex + 2;
     const rows = data.slice(dataStartRow);
 
     rows.forEach(row => {
         classBlocks.forEach(block => {
             const name = row[block.nameIndex];
-            const ra = block.raIndex !== -1 ? row[block.raIndex] : '---';
+            const ra = row[block.raIndex];
 
+            // Validação: deve ter nome, não ser apenas um número e não ser o próprio cabeçalho
             if (name && String(name).trim() !== '' &&
                 String(name).trim().toUpperCase() !== 'NOME' &&
                 isNaN(Number(String(name).trim()))) {
@@ -120,7 +118,6 @@ function doGet(e) {
             headerRow: headerRowIndex + 1,
             detectedHeaders: headers.slice(0, 20),
             subHeadersPreview: subHeaders.slice(0, 20),
-            rowsPreview: data.slice(0, 6).map(row => row.slice(0, 10)), // Preview das primeiras 6 linhas e 10 colunas
             availableSheets: allSheets
         }
     })).setMimeType(ContentService.MimeType.JSON);
