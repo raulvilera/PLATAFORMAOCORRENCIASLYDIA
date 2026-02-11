@@ -271,12 +271,28 @@ const App: React.FC = () => {
 
     let hasError = false;
 
-    for (const item of items) {
+    // Importação dinâmica para evitar circular dependency ou carregar desnecessariamente
+    const { uploadPDFToStorage } = await import('./services/pdfService');
+
+    for (let item of items) {
       try {
-        // 1. Salvar no Google Sheets
+        // 1. Verificar se precisa gerar PDF (se ainda não tem pdfUrl)
+        if (!item.pdfUrl) {
+          console.log(`📄 Gerando PDF para: ${item.studentName}`);
+          const uploadedUrl = await uploadPDFToStorage(item);
+          if (uploadedUrl) {
+            item.pdfUrl = uploadedUrl;
+            // Atualizar no cache também
+            const cacheUpdate = updatedList.map(inc => inc.id === item.id ? { ...inc, pdfUrl: uploadedUrl } : inc);
+            setIncidents(cacheUpdate);
+            localStorage.setItem('lkm_incidents_cache', JSON.stringify(cacheUpdate));
+          }
+        }
+
+        // 2. Salvar no Google Sheets
         await saveToGoogleSheets(item);
 
-        // 2. Salvar no Supabase
+        // 3. Salvar no Supabase
         if (isSupabaseConfigured && supabase) {
           const { error } = await supabase.from('incidents').insert({
             id: item.id,

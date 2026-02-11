@@ -97,24 +97,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
       authorEmail: user.email
     };
 
-    // Upload do PDF para Supabase Storage
-    try {
-      console.log('📤 Iniciando upload do PDF para:', newInc.studentName);
-      const uploadedPdfUrl = await uploadPDFToStorage(newInc);
-
-      if (uploadedPdfUrl) {
-        newInc.pdfUrl = uploadedPdfUrl;
-        console.log('✅ PDF enviado com sucesso!');
-        console.log('🔗 URL:', uploadedPdfUrl);
-      } else {
-        console.warn('⚠️ Falha no upload do PDF. Registro será salvo sem link.');
-        alert('⚠️ ATENÇÃO: O PDF não pôde ser enviado. O registro será salvo mas sem o link do documento.');
-      }
-    } catch (err) {
-      console.error('❌ Erro ao fazer upload do PDF:', err);
-      alert('❌ ERRO ao gerar PDF. O registro será salvo mas sem o documento.');
-    }
-
     onSave(newInc);
     setStudentName('');
     setDescription('');
