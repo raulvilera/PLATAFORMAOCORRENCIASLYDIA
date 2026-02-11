@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Incident, User } from '../types';
-import { STUDENTS_DB } from '../studentsData';
+import { Incident, User, Student } from './types';
 
 interface ProfessorViewProps {
   user: User;
   incidents: Incident[];
+  students: Student[];
   onSave: (incident: Incident | Incident[]) => void;
   onLogout: () => void;
 }
@@ -20,11 +20,11 @@ const DATA_TURMAS = [
 ];
 
 const LISTA_IRREGULARIDADES = [
-  'ATRASO', 'SEM MATERIAL', 'USO DE CELULAR', 'CONVERSA', 'DESRESPEITO', 
+  'ATRASO', 'SEM MATERIAL', 'USO DE CELULAR', 'CONVERSA', 'DESRESPEITO',
   'INDISCIPLINA', 'DESACATO', 'SEM TAREFA', 'SAIU SEM PERMISSÃO'
 ];
 
-const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, onLogout }) => {
+const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students, onSave, onLogout }) => {
   const [professorName, setProfessorName] = useState('');
   const [classRoom, setClassRoom] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -37,16 +37,16 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
 
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const studentsInClass = useMemo(() => STUDENTS_DB.filter(a => a.turma === classRoom), [classRoom]);
+  const studentsInClass = useMemo(() => students.filter(a => a.turma === classRoom), [classRoom, students]);
 
   const toggleStudent = (nome: string) => {
-    setSelectedStudents(prev => 
+    setSelectedStudents(prev =>
       prev.includes(nome) ? prev.filter(s => s !== nome) : [...prev, nome]
     );
   };
 
   const toggleIrregularity = (item: string) => {
-    setSelectedIrregularities(prev => 
+    setSelectedIrregularities(prev =>
       prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
     );
   };
@@ -79,7 +79,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
     const formattedDate = `${day}/${month}/${year}`;
 
     const newIncidents: Incident[] = selectedStudents.map((nome, index) => {
-      const studentData = STUDENTS_DB.find(s => s.nome === nome && s.turma === classRoom);
+      const studentData = students.find(s => s.nome === nome && s.turma === classRoom);
       return {
         id: `prof-${Date.now()}-${index}`,
         date: formattedDate,
@@ -115,7 +115,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
   const filteredHistory = useMemo(() => {
     if (!incidents) return [];
     const term = searchTerm.toLowerCase();
-    return incidents.filter(i => 
+    return incidents.filter(i =>
       (i.studentName || "").toLowerCase().includes(term) ||
       (i.classRoom || "").toLowerCase().includes(term) ||
       (i.professorName || "").toLowerCase().includes(term)
@@ -145,7 +145,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-white uppercase tracking-widest">PROFESSOR RESPONSÁVEL (DIGITE SEU NOME)</label>
-                  <input 
+                  <input
                     type="text"
                     value={professorName}
                     onChange={e => setProfessorName(e.target.value)}
@@ -169,10 +169,10 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
                 </div>
                 <div className="w-full h-64 overflow-y-auto bg-white/95 border border-gray-300 rounded-2xl p-4 custom-scrollbar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 shadow-inner">
                   {classRoom ? studentsInClass.map((a, idx) => (
-                      <label key={a.ra || idx} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedStudents.includes(a.nome) ? 'bg-blue-600 border-blue-400 text-white shadow-md' : 'bg-white border-gray-100 text-black hover:border-blue-200'}`}>
-                        <input type="checkbox" checked={selectedStudents.includes(a.nome)} onChange={() => toggleStudent(a.nome)} className="w-5 h-5 rounded-md text-blue-600" />
-                        <span className="text-[10px] font-black uppercase truncate">{a.nome}</span>
-                      </label>
+                    <label key={a.ra || idx} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedStudents.includes(a.nome) ? 'bg-blue-600 border-blue-400 text-white shadow-md' : 'bg-white border-gray-100 text-black hover:border-blue-200'}`}>
+                      <input type="checkbox" checked={selectedStudents.includes(a.nome)} onChange={() => toggleStudent(a.nome)} className="w-5 h-5 rounded-md text-blue-600" />
+                      <span className="text-[10px] font-black uppercase truncate">{a.nome}</span>
+                    </label>
                   )) : (
                     <div className="col-span-full h-full flex items-center justify-center text-gray-400 text-[10px] font-black uppercase italic">Selecione uma turma para carregar os alunos...</div>
                   )}
@@ -183,7 +183,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
                 <h3 className="text-yellow-400 font-black text-[9px] uppercase tracking-widest mb-3 flex items-center gap-2">CONFERÊNCIA DE NOMES E RAs</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                   {selectedStudents.length > 0 ? selectedStudents.map((name, i) => {
-                    const student = STUDENTS_DB.find(s => s.nome === name && s.turma === classRoom);
+                    const student = students.find(s => s.nome === name && s.turma === classRoom);
                     return (
                       <div key={i} className="flex justify-between items-center bg-white/10 px-3 py-2 rounded-lg border border-white/5">
                         <span className="text-[9px] font-bold text-white uppercase truncate mr-2">{name}</span>
@@ -212,12 +212,12 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
                 </div>
                 <div className="space-y-1 cursor-pointer" onClick={triggerCalendar}>
                   <label className="text-[10px] font-black text-white uppercase tracking-widest block cursor-pointer">DATA DO OCORRIDO</label>
-                  <input 
+                  <input
                     ref={dateInputRef}
-                    type="date" 
-                    value={registerDate} 
-                    onChange={e => setRegisterDate(e.target.value)} 
-                    className="w-full h-11 px-4 bg-white border border-gray-300 rounded-xl text-xs font-bold text-black outline-none cursor-pointer" 
+                    type="date"
+                    value={registerDate}
+                    onChange={e => setRegisterDate(e.target.value)}
+                    className="w-full h-11 px-4 bg-white border border-gray-300 rounded-xl text-xs font-bold text-black outline-none cursor-pointer"
                   />
                 </div>
               </div>
@@ -226,7 +226,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
                 <label className="text-[10px] font-black text-white uppercase tracking-widest">RELATO DOS FATOS (DESCRIÇÃO)</label>
                 <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full p-4 bg-white border border-gray-300 rounded-2xl text-xs font-bold text-black outline-none" placeholder="Descreva o ocorrido detalhadamente..."></textarea>
               </div>
-              
+
               <div className="flex justify-center pt-2">
                 <button type="submit" disabled={isSaving || selectedStudents.length === 0} className="px-16 py-5 bg-[#f97316] hover:bg-[#ea580c] text-blue-900 font-black text-[13px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl transition-all border-b-[6px] border-orange-800 disabled:opacity-50 active:translate-y-1 active:border-b-0">
                   {isSaving ? 'GRAVANDO...' : `EFETUAR REGISTRO PARA ${selectedStudents.length} ALUNO(S)`}
@@ -241,7 +241,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
             <h3 className="text-white font-black text-xs uppercase tracking-widest">HISTÓRICO RECENTE DE REGISTROS</h3>
             <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Filtrar histórico..." className="bg-white/10 border border-white/20 rounded px-4 py-2 text-[10px] font-bold outline-none focus:bg-white focus:text-black w-64 text-white placeholder:text-white/40 shadow-inner" />
           </div>
-          
+
           <div className="max-h-[600px] overflow-auto custom-scrollbar bg-gray-50">
             <table className="w-full border-collapse border border-gray-300">
               <thead className="sticky top-0 bg-[#f8fafc] z-20">
@@ -258,16 +258,16 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
               </thead>
               <tbody className="bg-white">
                 {filteredHistory.length > 0 ? filteredHistory.map((inc) => (
-                    <tr key={inc.id} className="hover:bg-blue-50/50 transition-colors">
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-gray-500 text-center whitespace-nowrap bg-gray-50/50">{inc.date}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-gray-800 uppercase truncate max-w-[150px]">{inc.professorName}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-center text-blue-900 uppercase bg-blue-50/20">{inc.classRoom}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-gray-900 uppercase">{inc.studentName}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-center text-blue-700 font-mono tracking-tighter">{inc.ra}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-gray-600 uppercase italic truncate max-w-[120px]">{inc.discipline || '---'}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-red-600 uppercase max-w-[180px] truncate">{inc.irregularities || '---'}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-[9px] font-medium text-gray-400 max-w-[250px] truncate">{inc.description}</td>
-                    </tr>
+                  <tr key={inc.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-gray-500 text-center whitespace-nowrap bg-gray-50/50">{inc.date}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-gray-800 uppercase truncate max-w-[150px]">{inc.professorName}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-center text-blue-900 uppercase bg-blue-50/20">{inc.classRoom}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-black text-gray-900 uppercase">{inc.studentName}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-center text-blue-700 font-mono tracking-tighter">{inc.ra}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-gray-600 uppercase italic truncate max-w-[120px]">{inc.discipline || '---'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-bold text-red-600 uppercase max-w-[180px] truncate">{inc.irregularities || '---'}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-[9px] font-medium text-gray-400 max-w-[250px] truncate">{inc.description}</td>
+                  </tr>
                 )) : (
                   <tr><td colSpan={8} className="px-6 py-16 text-center text-gray-400 text-[10px] font-black uppercase italic tracking-[0.2em] bg-white">Os registros gravados aparecerão automaticamente nesta grade...</td></tr>
                 )}
@@ -275,8 +275,8 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, onSave, 
             </table>
           </div>
           <div className="bg-[#f8fafc] px-8 py-3 border-t border-gray-300 flex justify-between items-center">
-             <span className="text-[9px] font-black text-gray-400 uppercase">Sistema de Ocorrências EE LKM • v2026.1</span>
-             <span className="text-[10px] font-black text-[#004a99] uppercase">{filteredHistory.length} registros no histórico</span>
+            <span className="text-[9px] font-black text-gray-400 uppercase">Sistema de Ocorrências EE LKM • v2026.1</span>
+            <span className="text-[10px] font-black text-[#004a99] uppercase">{filteredHistory.length} registros no histórico</span>
           </div>
         </section>
       </main>

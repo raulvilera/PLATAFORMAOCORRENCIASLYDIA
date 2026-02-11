@@ -157,9 +157,8 @@ const App: React.FC = () => {
             // Sincronizar com Supabase se houver conexão
             if (isSupabaseConfigured && supabase) {
               try {
-                // Limpar tabela students para evitar duplicatas (e manter o ID se necessário)
-                // Usando neq 'id' 0 para limpar tudo
-                await supabase.from('students').delete().neq('id', '0');
+                // Limpar tabela students para evitar duplicatas
+                await supabase.from('students').delete().filter('id', 'neq', '00000000-0000-0000-0000-000000000000');
 
                 const studentsToInsert = sheetsStudents.map((s, index) => ({
                   id: `synced-${Date.now()}-${index}`,

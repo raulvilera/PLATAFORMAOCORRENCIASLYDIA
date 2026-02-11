@@ -20,18 +20,29 @@ function doGet(e) {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return ContentService.createTextOutput(JSON.stringify({ success: true, students: [] })).setMimeType(ContentService.MimeType.JSON);
 
-    const headers = data[0].map(String);
-    const classAnchors = [];
+    const headers = data[0].map(h => String(h).toUpperCase().trim());
+    const classBlocks = [];
 
-    // Identifica todas as colunas que iniciam um bloco de turma
+    // Identifica o início de cada bloco de turma e as colunas NOME e RA dentro dele
     headers.forEach((h, i) => {
-        const title = h.toUpperCase().trim();
-        if (title !== '' && (title.includes('ANO') || title.includes('SERIE') || title.includes('SÉRIE'))) {
-            classAnchors.push({
-                index: i,
-                name: h.trim(),
-                raOffset: 3 // Mapeado: RA fica 3 colunas após o Nome
-            });
+        if (h !== '' && (h.includes('ANO') || h.includes('SERIE') || h.includes('SÉRIE'))) {
+            // Procurar as colunas NOME e RA nos arredores (próximas 5 colunas)
+            let nameIdx = -1;
+            let raIdx = -1;
+
+            for (let j = i; j < i + 5 && j < headers.length; j++) {
+                const headerText = headers[j];
+                if (headerText === 'NOME' && nameIdx === -1) nameIdx = j;
+                if (headerText === 'RA' && raIdx === -1) raIdx = j;
+            }
+
+            if (nameIdx !== -1) {
+                classBlocks.push({
+                    className: h,
+                    nameIndex: nameIdx,
+                    raIndex: raIdx
+                });
+            }
         }
     });
 
@@ -39,15 +50,19 @@ function doGet(e) {
     const rows = data.slice(1);
 
     rows.forEach(row => {
-        classAnchors.forEach(anchor => {
-            const name = row[anchor.index];
-            const ra = row[anchor.index + anchor.raOffset];
+        classBlocks.forEach(block => {
+            const name = row[block.nameIndex];
+            const ra = block.raIndex !== -1 ? row[block.raIndex] : '---';
 
-            if (name && String(name).trim() !== '' && String(name).trim().toUpperCase() !== 'NOME') {
+            // Validação: deve ter nome, não ser apenas um número e não ser o próprio cabeçalho "NOME"
+            if (name && String(name).trim() !== '' &&
+                String(name).trim().toUpperCase() !== 'NOME' &&
+                isNaN(Number(String(name).trim()))) { // Garante que não é um número (nº chamada)
+
                 students.push({
                     nome: String(name).trim().toUpperCase(),
                     ra: ra ? String(ra).trim().toLowerCase() : '---',
-                    turma: anchor.name
+                    turma: block.className
                 });
             }
         });
@@ -57,7 +72,7 @@ function doGet(e) {
         success: true,
         count: students.length,
         students: students,
-        debug: { classes: classAnchors.length }
+        debug: { blocks: classBlocks.length }
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
