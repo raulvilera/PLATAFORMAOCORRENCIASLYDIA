@@ -296,11 +296,25 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                 {filteredHistory.length > 0 ? filteredHistory.map(inc => (
                   <tr key={inc.id} className="hover:bg-blue-50/50 transition-all">
                     <td className="p-4 font-bold text-gray-500">{inc.date}</td>
-                    <td className="p-4"><StatusBadge status={inc.status} size="small" /></td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1">
+                        <StatusBadge status={inc.status} size="small" />
+                        {inc.lastViewedAt && (
+                          <span className="text-[7px] font-black text-teal-600 uppercase tracking-tighter">Visualizado pela Gestão</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4"><span className="font-black text-blue-900 uppercase">{inc.studentName}</span></td>
                     <td className="p-4 font-black text-blue-600">{inc.classRoom}</td>
                     <td className="p-4 uppercase font-bold text-gray-400">{inc.professorName}</td>
-                    <td className="p-4 max-w-xs truncate text-gray-500 italic">{inc.description}</td>
+                    <td className="p-4 max-w-xs text-gray-500 italic">
+                      <div className="truncate">{inc.description}</div>
+                      {inc.managementFeedback && (
+                        <div className="mt-2 p-2 bg-teal-50 border-l-2 border-teal-500 text-teal-800 font-bold text-[8px] not-italic leading-tight">
+                          DEVOLUTIVA GESTÃO: {inc.managementFeedback}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4">
                       <div className="flex justify-center gap-2">
                         <button

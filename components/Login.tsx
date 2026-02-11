@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { isProfessorRegistered } from '../professorsData';
+import { PROFESSORS_DB, isProfessorRegistered, getProfessorNameFromEmail } from '../professorsData';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -57,6 +57,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       lowerEmail.endsWith('@professor.educacao.sp.gov.br');
   };
 
+  const registeredName = useMemo(() => {
+    if (authMode === 'register' && email.includes('@')) {
+      return getProfessorNameFromEmail(email);
+    }
+    return '';
+  }, [email, authMode]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -96,7 +103,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (authError) {
         console.error('❌ [LOGIN] Erro de autenticação:', authError);
         if (authError.message.includes('Invalid login credentials')) {
-          throw new Error('CREDENCIAIS INVÁLIDAS. VERIFIQUE SEUS DADOS OU REALIZE UM NOVO CADASTRO.');
+          throw new Error('CREDENCIAIS INVÁLIDAS. VERIFIQUE SEUS DADOS OU SE JÁ CONFIRMOU SEU E-MAIL NO LINK ENVIADO (VERIFIQUE TAMBÉM A PASTA DE SPAM).');
         }
         throw new Error(authError.message.toUpperCase());
       }

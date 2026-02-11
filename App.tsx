@@ -195,7 +195,9 @@ const App: React.FC = () => {
           status: i.status as any,
           source: i.source as any,
           pdfUrl: i.pdf_url,
-          authorEmail: i.author_email
+          authorEmail: i.author_email,
+          managementFeedback: i.management_feedback,
+          lastViewedAt: i.last_viewed_at
         }));
         setIncidents(mapped);
         localStorage.setItem('lkm_incidents_cache', JSON.stringify(mapped));
@@ -243,16 +245,78 @@ const App: React.FC = () => {
   const handleDeleteIncident = async (id: string) => {
     const inc = incidents.find(i => i.id === id);
     if (!inc || !user) return;
+
     if (inc.authorEmail && inc.authorEmail !== user.email && user.role !== 'gestor') {
       alert("ACESSO NEGADO: Você só pode excluir seus próprios registros.");
       return;
     }
-    if (!window.confirm("CONFIRMAR EXCLUSÃO?")) return;
+
+    if (!window.confirm("CONFIRMAR EXCLUSÃO PERMANENTE?")) return;
+
+    // Backup para rollback em caso de erro
+    const previousIncidents = [...incidents];
+
+    // Filtro otimista na UI
     const filtered = incidents.filter(i => i.id !== id);
     setIncidents(filtered);
     localStorage.setItem('lkm_incidents_cache', JSON.stringify(filtered));
+
     if (isSupabaseConfigured && supabase) {
-      await supabase.from('incidents').delete().eq('id', id);
+      try {
+        console.log(`🗑️ [DELETE] Tentando excluir incidente: ${id}`);
+        const { error } = await supabase.from('incidents').delete().eq('id', id);
+
+        if (error) {
+          console.error('❌ [DELETE] Erro ao excluir do banco:', error);
+          // Rollback em caso de erro de permissão ou rede
+          setIncidents(previousIncidents);
+          localStorage.setItem('lkm_incidents_cache', JSON.stringify(previousIncidents));
+
+          if (error.message.includes('permission denied')) {
+            alert("ERRO DE PERMISSÃO: O banco de dados não permitiu a exclusão. Verifique se você é o autor ou se tem nível de Gestor.");
+          } else {
+            alert(`Ocorreu um erro ao excluir do servidor: ${error.message}`);
+          }
+        } else {
+          console.log('✅ [DELETE] Excluído com sucesso do banco de dados');
+        }
+      } catch (err) {
+        console.error('❌ [DELETE] Erro inesperado:', err);
+        setIncidents(previousIncidents);
+        localStorage.setItem('lkm_incidents_cache', JSON.stringify(previousIncidents));
+        alert("Erro de conexão ao tentar excluir. O registro foi restaurado.");
+      }
+    }
+  };
+
+  const handleUpdateIncident = async (updated: Incident) => {
+    if (!user) return;
+
+    // Atualização local
+    const newIncidents = incidents.map(i => i.id === updated.id ? updated : i);
+    setIncidents(newIncidents);
+    localStorage.setItem('lkm_incidents_cache', JSON.stringify(newIncidents));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('incidents')
+          .update({
+            status: updated.status,
+            management_feedback: updated.managementFeedback,
+            last_viewed_at: updated.lastViewedAt
+          })
+          .eq('id', updated.id);
+
+        if (error) {
+          console.error('❌ [UPDATE] Erro ao atualizar no banco:', error);
+          alert(`Erro ao salvar atualização: ${error.message}`);
+        } else {
+          console.log('✅ [UPDATE] Atualizado com sucesso no banco');
+        }
+      } catch (err) {
+        console.error('❌ [UPDATE] Erro inesperado:', err);
+      }
     }
   };
 
@@ -310,6 +374,7 @@ const App: React.FC = () => {
     classes: classes,
     onSave: handleSaveIncident,
     onDelete: handleDeleteIncident,
+    onUpdateIncident: handleUpdateIncident,
     onLogout: handleLogout,
     onOpenSearch: () => setSearchModalOpen(true)
   };

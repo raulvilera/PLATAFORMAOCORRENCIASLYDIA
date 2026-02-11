@@ -31,6 +31,8 @@ export interface Incident {
   source: 'professor' | 'gestao';
   pdfUrl?: string;
   authorEmail?: string; // E-mail do autor do registro para controle de exclusão
+  managementFeedback?: string;
+  lastViewedAt?: string;
 }
 
 export type View = 'login' | 'dashboard';

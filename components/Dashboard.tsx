@@ -16,7 +16,7 @@ interface DashboardProps {
   onUpdateIncident?: (incident: Incident) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classes, onSave, onDelete, onLogout, onOpenSearch }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classes, onSave, onDelete, onLogout, onOpenSearch, onUpdateIncident }) => {
   const [classRoom, setClassRoom] = useState('');
   const [studentName, setStudentName] = useState('');
   const [professorName, setProfessorName] = useState('');
@@ -31,6 +31,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
 
   const regDateRef = useRef<HTMLInputElement>(null);
   const retDateRef = useRef<HTMLInputElement>(null);
+
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<Incident | null>(null);
+  const [newStatus, setNewStatus] = useState<Incident['status']>('Pendente');
+  const [feedback, setFeedback] = useState('');
 
   const ra = useMemo(() => {
     const s = students.find(st => st.nome === studentName && st.turma === classRoom);
@@ -107,6 +111,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
     setDescription('');
     setReturnDate('');
     setIsSaving(false);
+  };
+
+  const openUpdateModal = (inc: Incident) => {
+    setIsUpdatingStatus(inc);
+    setNewStatus(inc.status);
+    setFeedback(inc.managementFeedback || '');
+  };
+
+  const handleUpdateStatus = () => {
+    if (!isUpdatingStatus || !onUpdateIncident) return;
+
+    const updated: Incident = {
+      ...isUpdatingStatus,
+      status: newStatus,
+      managementFeedback: feedback.toUpperCase(),
+      lastViewedAt: new Date().toISOString()
+    };
+
+    onUpdateIncident(updated);
+    setIsUpdatingStatus(null);
   };
 
   const history = useMemo(() => {
@@ -300,7 +324,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                 {history.length > 0 ? history.map(inc => (
                   <tr key={inc.id} className="hover:bg-blue-50/40 transition-all">
                     <td className="p-4 font-black text-gray-500">{inc.date}</td>
-                    <td className="p-4"><StatusBadge status={inc.status} size="small" /></td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1">
+                        <StatusBadge status={inc.status} size="small" />
+                        {inc.lastViewedAt && (
+                          <span className="text-[7px] font-bold text-teal-600 uppercase">Visualizado</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">
                       <div className="flex flex-col">
                         <span className="font-black text-[#002b5c] uppercase">{inc.studentName}</span>
@@ -314,7 +345,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                       </span>
                     </td>
                     <td className="p-4 font-black text-[#002b5c] uppercase truncate max-w-[150px]">{inc.professorName}</td>
-                    <td className="p-4 max-sm truncate text-gray-600 italic">{inc.description}</td>
+                    <td className="p-4 max-sm truncate text-gray-600 italic">
+                      <div>{inc.description}</div>
+                      {inc.managementFeedback && (
+                        <div className="mt-2 p-2 bg-teal-50 border-l-2 border-teal-500 text-teal-800 font-bold text-[8px]">
+                          DEVOLUTIVA: {inc.managementFeedback}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4">
                       <div className="flex justify-center gap-2">
                         <button onClick={() => generateIncidentPDF(inc, 'view')} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
@@ -322,13 +360,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                       </div>
                     </td>
                     <td className="p-4 text-center">
-                      {(!inc.authorEmail || inc.authorEmail === user.email) && (
-                        <button onClick={() => onDelete(inc.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all" title="Excluir registro"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                      )}
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => openUpdateModal(inc)}
+                          className="p-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition-all"
+                          title="Atualizar Status / Devolutiva"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        {(!inc.authorEmail || inc.authorEmail === user.email) && (
+                          <button onClick={() => onDelete(inc.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all" title="Excluir registro"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={8} className="p-20 text-center text-gray-300 font-black uppercase text-xs tracking-widest">Nenhum registro recente encontrado</td></tr>
+                  <tr><td colSpan={9} className="p-20 text-center text-gray-300 font-black uppercase text-xs tracking-widest">Nenhum registro recente encontrado</td></tr>
                 )}
               </tbody>
             </table>
@@ -336,9 +383,67 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
         </section>
       </main>
 
+      {/* Modal de Atualização de Status e Devolutiva */}
+      {isUpdatingStatus && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl border border-white/20">
+            <div className="bg-[#002b5c] p-6 text-center">
+              <h3 className="text-white font-black text-xs uppercase tracking-widest">Atualizar Ocorrência</h3>
+              <p className="text-teal-400 text-[9px] font-bold mt-1 uppercase">{isUpdatingStatus.studentName}</p>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Status da Ocorrência</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['Pendente', 'Em Análise', 'Resolvido'] as Incident['status'][]).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setNewStatus(s)}
+                      className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all border-2 
+                        ${newStatus === s
+                          ? 'bg-[#002b5c] text-white border-transparent shadow-lg scale-105'
+                          : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Feedback / Devolutiva ao Professor</label>
+                <textarea
+                  rows={4}
+                  value={feedback}
+                  onChange={e => setFeedback(e.target.value)}
+                  placeholder="DIGITE AQUI A DEVOLUTIVA DA GESTÃO..."
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-[10px] font-bold uppercase !text-black outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+                ></textarea>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsUpdatingStatus(null)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-500 font-black text-[10px] uppercase rounded-2xl hover:bg-gray-200 transition-all border-b-4 border-gray-300 active:border-b-0 active:translate-y-1"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUpdateStatus}
+                  className="flex-2 py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-black text-[10px] uppercase rounded-2xl hover:shadow-lg transition-all border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 px-8"
+                >
+                  Salvar Devolutiva
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   );
