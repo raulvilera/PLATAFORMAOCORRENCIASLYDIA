@@ -47,45 +47,48 @@ const App: React.FC = () => {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          // 2. Detectar se viemos de um link de recuperação (pelo Hash)
-          const isRecovery = window.location.hash.includes('type=recovery') ||
-            window.location.hash.includes('access_token');
+          // O link de recuperação contém access_token ou type=recovery
+          let isDuringRecovery = window.location.hash.includes('type=recovery') ||
+            window.location.hash.includes('access_token=');
 
-          if (isRecovery) {
-            console.log('🔑 [APP] Link de recuperação detectado via Hash');
+          if (isDuringRecovery) {
+            console.log('🔑 [APP] MODO RECUPERAÇÃO ATIVADO - Bloqueando redirecionamentos');
             setView('resetPassword');
           }
 
           // 3. Listener de mudanças de estado (Auth)
           const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🔔 [AUTH] Evento:', event);
+            console.log('🔔 [AUTH] Evento:', event, 'Sessão:', !!session);
 
             if (event === 'PASSWORD_RECOVERY') {
-              console.log('🔐 [APP] Modo de recuperação de senha ativado (Event)');
+              isDuringRecovery = true;
+              console.log('🔐 [APP] Redirecionando para tela de redefinição...');
               setView('resetPassword');
               return;
             }
 
             if (session?.user) {
-              // Se estamos em modo de recuperação, NÃO redirecionamos para o dashboard ainda
-              const urlHash = window.location.hash;
-              const currentView = urlHash.includes('type=recovery') ? 'resetPassword' : '';
+              if (isDuringRecovery) {
+                console.log('🛡️ [APP] Bloqueio de Segurança: Ignorando redirect para Dashboard durante recuperação');
+                setView('resetPassword');
+                return;
+              }
 
               if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                if (currentView !== 'resetPassword' && !urlHash.includes('recovery')) {
-                  const email = session.user.email!.toLowerCase();
-                  if (isProfessorRegistered(email)) {
-                    const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
-                    setUser({ email, role });
-                    setView('dashboard');
-                  } else {
-                    await supabase.auth.signOut();
-                    setUser(null);
-                    setView('login');
-                  }
+                const email = session.user.email!.toLowerCase();
+                if (isProfessorRegistered(email)) {
+                  const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
+                  setUser({ email, role });
+                  setView('dashboard');
+                } else {
+                  console.warn('⚠️ [APP] Usuário não autorizado:', email);
+                  await supabase.auth.signOut();
+                  setUser(null);
+                  setView('login');
                 }
               }
             } else if (event === 'SIGNED_OUT') {
+              isDuringRecovery = false;
               setUser(null);
               setView('login');
             }
@@ -93,8 +96,8 @@ const App: React.FC = () => {
 
           authListener = subscription;
 
-          // 4. Verificação inicial da sessão (caso o listener falhe)
-          if (!isRecovery) {
+          // 4. Verificação inicial da sessão
+          if (!isDuringRecovery) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
               const email = session.user.email!.toLowerCase();
@@ -120,51 +123,14 @@ const App: React.FC = () => {
   }, []); // Sem dependência de [view] para evitar loop
 
   useEffect(() => {
-    const loadStudentsData = async () => {
+    const loadStudentsData = async (forceSync = false) => {
       let finalStudents: Student[] = [];
-      let loadedFromSheets = false;
+      let loadedFromSupabase = false;
 
-      // 1. Tentar carregar do Google Sheets primeiro (fonte primária)
-      try {
-        const sheetsStudents = await loadStudentsFromSheets();
-        if (sheetsStudents.length > 0) {
-          finalStudents = sheetsStudents;
-          loadedFromSheets = true;
-          console.log(`✅ Google Sheets: Carregados ${sheetsStudents.length} alunos`);
-
-          // 2. Sincronizar com Supabase (cache)
-          if (isSupabaseConfigured && supabase) {
-            try {
-              // Limpar tabela students
-              await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-              // Inserir novos dados
-              const studentsToInsert = sheetsStudents.map((s, index) => ({
-                id: `sheet-${Date.now()}-${index}`,
-                nome: s.nome,
-                ra: s.ra,
-                turma: s.turma
-              }));
-
-              const { error } = await supabase.from('students').insert(studentsToInsert);
-              if (!error) {
-                console.log('✅ Supabase: Dados sincronizados');
-              } else {
-                console.warn('⚠️ Supabase: Erro ao sincronizar:', error);
-              }
-            } catch (syncError) {
-              console.warn('⚠️ Supabase: Falha na sincronização:', syncError);
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Google Sheets: Falha ao carregar, tentando Supabase...');
-      }
-
-      // 3. Fallback: Supabase (cache)
-      if (!loadedFromSheets && isSupabaseConfigured && supabase) {
+      // 1. Tentar carregar do Supabase primeiro (Fonte Primária)
+      if (isSupabaseConfigured && supabase && !forceSync) {
         try {
-          const { data, error } = await supabase.from('students').select('*');
+          const { data, error } = await supabase.from('students').select('*').order('nome');
           if (!error && data && data.length > 0) {
             finalStudents = data.map(s => ({
               id: s.id,
@@ -172,10 +138,45 @@ const App: React.FC = () => {
               ra: s.ra,
               turma: s.turma
             }));
-            console.log(`✅ Supabase: Carregados ${finalStudents.length} alunos (cache)`);
+            loadedFromSupabase = true;
+            console.log(`✅ Supabase: Carregados ${finalStudents.length} alunos`);
           }
         } catch (e) {
-          console.warn('⚠️ Supabase: Falha ao carregar');
+          console.warn('⚠️ Supabase: Falha ao carregar alunos');
+        }
+      }
+
+      // 2. Se falhar Supabase ou for Sincronização Forçada, carregar do Google Sheets
+      if (!loadedFromSupabase || forceSync) {
+        try {
+          const sheetsStudents = await loadStudentsFromSheets();
+          if (sheetsStudents.length > 0) {
+            finalStudents = sheetsStudents;
+            console.log(`✅ Google Sheets: Carregados ${sheetsStudents.length} alunos`);
+
+            // Sincronizar com Supabase se houver conexão
+            if (isSupabaseConfigured && supabase) {
+              try {
+                // Limpar tabela students para evitar duplicatas (e manter o ID se necessário)
+                // Usando neq 'id' 0 para limpar tudo
+                await supabase.from('students').delete().neq('id', '0');
+
+                const studentsToInsert = sheetsStudents.map((s, index) => ({
+                  id: `synced-${Date.now()}-${index}`,
+                  nome: s.nome,
+                  ra: s.ra,
+                  turma: s.turma
+                }));
+
+                const { error } = await supabase.from('students').insert(studentsToInsert);
+                if (!error) console.log('✅ Supabase: Dados sincronizados do Sheets');
+              } catch (syncError) {
+                console.warn('⚠️ Supabase: Erro na sincronização:', syncError);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Google Sheets: Falha ao carregar');
         }
       }
 
@@ -201,7 +202,22 @@ const App: React.FC = () => {
     };
 
     loadStudentsData();
+    (window as any).refreshStudents = (sync = false) => loadStudentsData(sync);
   }, [user]);
+
+  const handleSyncStudents = async () => {
+    setLoading(true);
+    try {
+      // Re-executa loadStudentsData com força de sincronização
+      const loadFn = (window as any).refreshStudents;
+      if (loadFn) await loadFn(true);
+      alert("Sincronização com Google Sheets concluída com sucesso!");
+    } catch (err) {
+      alert("Erro ao sincronizar alunos.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) loadCloudIncidents();
@@ -410,11 +426,10 @@ const App: React.FC = () => {
     incidents: incidents,
     students: students,
     classes: classes,
-    onSave: handleSaveIncident,
-    onDelete: handleDeleteIncident,
     onUpdateIncident: handleUpdateIncident,
     onLogout: handleLogout,
-    onOpenSearch: () => setSearchModalOpen(true)
+    onOpenSearch: () => setSearchModalOpen(true),
+    onSyncStudents: handleSyncStudents
   };
 
   // Determina qual visualização renderizar
