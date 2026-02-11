@@ -263,14 +263,22 @@ const App: React.FC = () => {
     const items = (Array.isArray(newIncident) ? newIncident : [newIncident]).map(i => ({
       ...i, authorEmail: user.email
     }));
+
+    // Atualização otimista
     const updatedList = [...items, ...incidents];
     setIncidents(updatedList);
     localStorage.setItem('lkm_incidents_cache', JSON.stringify(updatedList));
+
+    let hasError = false;
+
     for (const item of items) {
-      saveToGoogleSheets(item);
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.from('incidents').insert({
+      try {
+        // 1. Salvar no Google Sheets
+        await saveToGoogleSheets(item);
+
+        // 2. Salvar no Supabase
+        if (isSupabaseConfigured && supabase) {
+          const { error } = await supabase.from('incidents').insert({
             id: item.id,
             student_name: item.studentName,
             ra: item.ra,
@@ -290,8 +298,20 @@ const App: React.FC = () => {
             pdf_url: item.pdfUrl,
             author_email: item.authorEmail
           });
-        } catch (err) { console.error("Erro banco"); }
+
+          if (error) {
+            console.error("❌ [SUPABASE] Erro ao salvar incidente:", error.message);
+            hasError = true;
+          }
+        }
+      } catch (err) {
+        console.error("❌ [ERROR] Falha na persistência:", err);
+        hasError = true;
       }
+    }
+
+    if (hasError) {
+      alert("⚠️ ALERTA: Alguns registros foram salvos localmente, mas podem não ter sido sincronizados com o servidor. Verifique sua conexão.");
     }
   };
 
@@ -425,6 +445,8 @@ const App: React.FC = () => {
     incidents: incidents,
     students: students,
     classes: classes,
+    onSave: handleSaveIncident,
+    onDelete: handleDeleteIncident,
     onUpdateIncident: handleUpdateIncident,
     onLogout: handleLogout,
     onOpenSearch: () => setSearchModalOpen(true),
