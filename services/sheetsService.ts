@@ -4,7 +4,7 @@ import { Incident, Student } from '../types';
 /**
  * URL do seu Google Apps Script implantado como Web App.
  */
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0heHXQmTyOmXGMYBdd0eik4E1mBrMsh06agX-QtB6craksSmRzSheU36zZywyP9y0tg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHf1GN-nK0ErcVFLG_yUu20Lm4cX1_nlPpuNKTvNQoGOgg98NFv0Vf3mHDBdZtaw9TYw/exec';
 
 /**
  * Carrega a lista de alunos da planilha Google Sheets.
