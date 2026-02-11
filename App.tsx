@@ -44,42 +44,52 @@ const App: React.FC = () => {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          // Detectar se é um link de reset de senha
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const recoveryToken = hashParams.get('access_token');
-          const tokenType = hashParams.get('type');
+          // 1. Detectar evento de recuperação de senha via listener oficial
+          supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🔔 [AUTH] Evento:', event);
 
-          if (recoveryToken && tokenType === 'recovery') {
-            console.log('🔐 [APP] Link de reset de senha detectado');
-            setView('resetPassword');
-            setLoading(false);
-            return;
-          }
-
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            const email = session.user.email!.toLowerCase();
-
-            // VALIDAÇÃO DE WHITELIST: Verifica se professor está cadastrado
-            if (!isProfessorRegistered(email)) {
-              console.warn('⚠️ Sessão detectada mas e-mail não cadastrado:', email);
-              await supabase.auth.signOut();
-              setLoading(false);
+            if (event === 'PASSWORD_RECOVERY') {
+              console.log('🔐 [APP] Modo de recuperação de senha ativado');
+              setView('resetPassword');
               return;
             }
 
-            const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
-            setUser({ email, role });
-            setView('dashboard');
+            if (event === 'SIGNED_IN' && session?.user && view !== 'resetPassword') {
+              const email = session.user.email!.toLowerCase();
+              if (isProfessorRegistered(email)) {
+                const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
+                setUser({ email, role });
+                setView('dashboard');
+              } else {
+                await supabase.auth.signOut();
+              }
+            }
+          });
+
+          // 2. Fallback para detecção via Hash (caso o listener demore)
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          if (hashParams.get('type') === 'recovery' || hashParams.get('access_token')) {
+            setView('resetPassword');
+          }
+
+          // 3. Verificar sessão atual se não estiver em modo de recuperação
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && view !== 'resetPassword') {
+            const email = session.user.email!.toLowerCase();
+            if (isProfessorRegistered(email)) {
+              const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
+              setUser({ email, role });
+              setView('dashboard');
+            }
           }
         } catch (e) {
-          console.warn("Supabase não respondeu.");
+          console.warn("Erro ao inicializar auth:", e);
         }
       }
       setLoading(false);
     };
     initApp();
-  }, []);
+  }, [view]);
 
   useEffect(() => {
     const loadStudentsData = async () => {

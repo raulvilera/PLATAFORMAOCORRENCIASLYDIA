@@ -36,7 +36,16 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete, onCancel }) =
 
             if (updateError) {
                 console.error('❌ [RESET] Erro ao atualizar senha:', updateError);
-                throw new Error('ERRO AO ATUALIZAR SENHA. TENTE NOVAMENTE.');
+
+                // Melhorar mensagens para o usuário
+                if (updateError.message.includes('expired')) {
+                    throw new Error('ESTE LINK JÁ EXPIROU. POR FAVOR, SOLICITE UM NOVO E-MAIL DE REDEFINIÇÃO.');
+                }
+                if (updateError.message.includes('same as old')) {
+                    throw new Error('A NOVA SENHA NÃO PODE SER IGUAL À ANTERIOR.');
+                }
+
+                throw new Error(updateError.message.toUpperCase());
             }
 
             console.log('✅ [RESET] Senha atualizada com sucesso!');
