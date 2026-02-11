@@ -17,20 +17,56 @@ function doGet(e) {
         return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Aba não encontrada' })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    const allSheets = ss.getSheets().map(s => s.getName());
     const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return ContentService.createTextOutput(JSON.stringify({ success: true, students: [] })).setMimeType(ContentService.MimeType.JSON);
 
-    const headers = data[0].map(h => String(h).toUpperCase().trim());
+    if (data.length === 0) {
+        return ContentService.createTextOutput(JSON.stringify({
+            success: false,
+            error: 'Planilha vazia',
+            availableSheets: allSheets
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Tentar encontrar a linha de cabeçalho (procura por "ANO" ou "SÉRIE" nas primeiras 5 linhas)
+    let headerRowIndex = -1;
+    for (let r = 0; r < Math.min(data.length, 5); r++) {
+        const hasBlock = data[r].some(cell => {
+            const val = String(cell).toUpperCase();
+            return val.includes('ANO') || val.includes('SERIE') || val.includes('SÉRIE');
+        });
+        if (hasBlock) {
+            headerRowIndex = r;
+            break;
+        }
+    }
+
+    if (headerRowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({
+            success: true,
+            count: 0,
+            students: [],
+            debug: {
+                error: 'Nenhum cabeçalho de turma encontrado nas primeiras 5 linhas',
+                firstRowPreview: data[0].slice(0, 5),
+                availableSheets: allSheets
+            }
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const headers = data[headerRowIndex].map(h => String(h).toUpperCase().trim());
     const classBlocks = [];
 
     // Identifica o início de cada bloco de turma e as colunas NOME e RA dentro dele
     headers.forEach((h, i) => {
         if (h !== '' && (h.includes('ANO') || h.includes('SERIE') || h.includes('SÉRIE'))) {
-            // Procurar as colunas NOME e RA nos arredores (próximas 5 colunas)
             let nameIdx = -1;
             let raIdx = -1;
 
-            for (let j = i; j < i + 5 && j < headers.length; j++) {
+            // Procurar NOME e RA nas colunas seguintes (até encontrar a próxima turma ou fim)
+            for (let j = i; j < headers.length; j++) {
+                if (j > i && (headers[j].includes('ANO') || headers[j].includes('SERIE') || headers[j].includes('SÉRIE'))) break;
+
                 const headerText = headers[j];
                 if (headerText === 'NOME' && nameIdx === -1) nameIdx = j;
                 if (headerText === 'RA' && raIdx === -1) raIdx = j;
@@ -47,17 +83,16 @@ function doGet(e) {
     });
 
     const students = [];
-    const rows = data.slice(1);
+    const rows = data.slice(headerRowIndex + 1);
 
     rows.forEach(row => {
         classBlocks.forEach(block => {
             const name = row[block.nameIndex];
             const ra = block.raIndex !== -1 ? row[block.raIndex] : '---';
 
-            // Validação: deve ter nome, não ser apenas um número e não ser o próprio cabeçalho "NOME"
             if (name && String(name).trim() !== '' &&
                 String(name).trim().toUpperCase() !== 'NOME' &&
-                isNaN(Number(String(name).trim()))) { // Garante que não é um número (nº chamada)
+                isNaN(Number(String(name).trim()))) {
 
                 students.push({
                     nome: String(name).trim().toUpperCase(),
@@ -72,7 +107,12 @@ function doGet(e) {
         success: true,
         count: students.length,
         students: students,
-        debug: { blocks: classBlocks.length }
+        debug: {
+            blocks: classBlocks.length,
+            sheetUsed: sheetName,
+            headerRow: headerRowIndex + 1,
+            availableSheets: allSheets
+        }
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
