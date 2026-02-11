@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Incident, User, Student } from '../types';
 import { generateIncidentPDF, uploadPDFToStorage } from '../services/pdfService';
 import StatusBadge from './StatusBadge';
+import { supabase } from '../services/supabaseClient';
 
 interface DashboardProps {
   user: User;
@@ -35,6 +36,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<Incident | null>(null);
   const [newStatus, setNewStatus] = useState<Incident['status']>('Pendente');
   const [feedback, setFeedback] = useState('');
+
+  // Estados para Gerenciamento de Professores
+  const [showProfessorsModal, setShowProfessorsModal] = useState(false);
+  const [professorsList, setProfessorsList] = useState<{ email: string, nome: string }[]>([]);
+  const [newProfEmail, setNewProfEmail] = useState('');
+  const [newProfNome, setNewProfNome] = useState('');
+  const [isManagingProfs, setIsManagingProfs] = useState(false);
 
   const ra = useMemo(() => {
     const s = students.find(st => st.nome === studentName && st.turma === classRoom);
@@ -133,6 +141,46 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
     setIsUpdatingStatus(null);
   };
 
+  const fetchProfessors = async () => {
+    setIsManagingProfs(true);
+    const { data, error } = await supabase.from('authorized_professors').select('email, nome').order('nome');
+    if (data) setProfessorsList(data);
+    setIsManagingProfs(false);
+  };
+
+  const handleAddProfessor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProfEmail || !newProfNome) return;
+
+    setIsManagingProfs(true);
+    const { error } = await supabase.from('authorized_professors').insert([
+      { email: newProfEmail.toLowerCase().trim(), nome: newProfNome.toUpperCase().trim() }
+    ]);
+
+    if (error) {
+      alert("Erro ao adicionar professor: " + error.message);
+    } else {
+      setNewProfEmail('');
+      setNewProfNome('');
+      await fetchProfessors();
+    }
+    setIsManagingProfs(false);
+  };
+
+  const handleRemoveProfessor = async (email: string) => {
+    if (!confirm(`Deseja remover o acesso de ${email}?`)) return;
+
+    setIsManagingProfs(true);
+    const { error } = await supabase.from('authorized_professors').delete().eq('email', email);
+
+    if (error) {
+      alert("Erro ao remover: " + error.message);
+    } else {
+      await fetchProfessors();
+    }
+    setIsManagingProfs(false);
+  };
+
   const history = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return incidents.filter(i =>
@@ -155,6 +203,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
             <span className="text-[8px] font-bold text-orange-500 uppercase">Nível: Administrador</span>
           </div>
           <button onClick={onLogout} className="bg-white hover:bg-red-50 text-[#002b5c] px-4 sm:px-5 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase shadow-lg transition-all active:scale-95">Sair</button>
+          <button
+            onClick={() => { setShowProfessorsModal(true); fetchProfessors(); }}
+            className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase shadow-lg transition-all active:scale-95 flex items-center gap-2"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+            Professores
+          </button>
         </div>
       </header>
 
@@ -383,59 +438,105 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
         </section>
       </main>
 
-      {/* Modal de Atualização de Status e Devolutiva */}
-      {isUpdatingStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl border border-white/20">
-            <div className="bg-[#002b5c] p-6 text-center">
-              <h3 className="text-white font-black text-xs uppercase tracking-widest">Atualizar Ocorrência</h3>
-              <p className="text-teal-400 text-[9px] font-bold mt-1 uppercase">{isUpdatingStatus.studentName}</p>
+      {/* Modal de Gerenciamento de Professores */}
+      {showProfessorsModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in shadow-2xl">
+          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] overflow-hidden flex flex-col border border-white/20">
+            <div className="bg-[#002b5c] p-6 text-center shrink-0 border-b-4 border-teal-500">
+              <h3 className="text-white font-black text-xs uppercase tracking-[0.2em]">Gerenciar Professores Autorizados</h3>
+              <p className="text-teal-400 text-[9px] font-bold mt-1 uppercase">Controle de Acesso à Plataforma</p>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Status da Ocorrência</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Pendente', 'Em Análise', 'Resolvido'] as Incident['status'][]).map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setNewStatus(s)}
-                      className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all border-2 
-                        ${newStatus === s
-                          ? 'bg-[#002b5c] text-white border-transparent shadow-lg scale-105'
-                          : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar flex flex-col lg:flex-row gap-8">
+              {/* Formulário lateral */}
+              <div className="lg:w-1/3 space-y-6 shrink-0">
+                <form onSubmit={handleAddProfessor} className="p-6 bg-gray-50 rounded-[32px] border border-gray-100 space-y-4">
+                  <h4 className="text-[10px] font-black text-[#002b5c] uppercase text-center mb-2">Novo Professor</h4>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block ml-2">E-mail</label>
+                    <input
+                      required
+                      type="email"
+                      value={newProfEmail}
+                      onChange={e => setNewProfEmail(e.target.value)}
+                      placeholder="exemplo@prof.educacao.sp.gov.br"
+                      className="w-full h-11 px-4 bg-white border border-gray-200 rounded-2xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-teal-500 transition-all text-black"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block ml-2">Nome Completo</label>
+                    <input
+                      required
+                      type="text"
+                      value={newProfNome}
+                      onChange={e => setNewProfNome(e.target.value)}
+                      placeholder="NOME DO PROFESSOR"
+                      className="w-full h-11 px-4 bg-white border border-gray-200 rounded-2xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-teal-500 transition-all uppercase text-black"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isManagingProfs}
+                    className="w-full py-4 bg-teal-500 text-white font-black text-[10px] uppercase rounded-2xl hover:bg-teal-600 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  >
+                    {isManagingProfs ? 'Salvando...' : 'Adicionar Professor'}
+                  </button>
+                </form>
+
+                <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl">
+                  <p className="text-[8px] font-bold text-orange-700 uppercase leading-relaxed">
+                    ⚠️ Somente professores cadastrados nesta lista poderão criar contas ou fazer login no portal.
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Feedback / Devolutiva ao Professor</label>
-                <textarea
-                  rows={4}
-                  value={feedback}
-                  onChange={e => setFeedback(e.target.value)}
-                  placeholder="DIGITE AQUI A DEVOLUTIVA DA GESTÃO..."
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-[10px] font-bold uppercase !text-black outline-none focus:ring-2 focus:ring-teal-500 transition-all"
-                ></textarea>
+              {/* Lista Principal */}
+              <div className="flex-1 min-h-[400px] flex flex-col">
+                <div className="flex justify-between items-center mb-4 px-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase">{professorsList.length} Professores Cadastrados</p>
+                </div>
+                <div className="flex-1 bg-gray-50 rounded-[32px] border border-gray-100 overflow-hidden flex flex-col">
+                  <div className="overflow-y-auto custom-scrollbar flex-1">
+                    <table className="w-full text-left text-[10px]">
+                      <thead className="bg-[#f8fafc] border-b text-black sticky top-0">
+                        <tr>
+                          <th className="p-4 font-black uppercase tracking-widest">Professor</th>
+                          <th className="p-4 font-black uppercase tracking-widest text-center">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {professorsList.map(prof => (
+                          <tr key={prof.email} className="hover:bg-blue-50/40 transition-all">
+                            <td className="p-4">
+                              <div className="flex flex-col">
+                                <span className="font-black text-[#002b5c] uppercase">{prof.nome}</span>
+                                <span className="text-[9px] font-bold text-gray-400 tracking-tight">{prof.email}</span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => handleRemoveProfessor(prof.email)}
+                                className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-90"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsUpdatingStatus(null)}
-                  className="flex-1 py-4 bg-gray-100 text-gray-500 font-black text-[10px] uppercase rounded-2xl hover:bg-gray-200 transition-all border-b-4 border-gray-300 active:border-b-0 active:translate-y-1"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleUpdateStatus}
-                  className="flex-2 py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-black text-[10px] uppercase rounded-2xl hover:shadow-lg transition-all border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 px-8"
-                >
-                  Salvar Devolutiva
-                </button>
-              </div>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-center shrink-0">
+              <button
+                onClick={() => setShowProfessorsModal(false)}
+                className="px-12 py-4 bg-[#002b5c] text-white font-black text-[10px] uppercase rounded-full hover:shadow-xl transition-all active:scale-95"
+              >
+                Fechar Painel
+              </button>
             </div>
           </div>
         </div>

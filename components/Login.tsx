@@ -111,12 +111,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (data.user) {
         console.log('✅ [LOGIN] Login bem-sucedido! Usuário:', data.user.email);
 
-        // VALIDAÇÃO DE WHITELIST: Verifica o email original (não o alias)
+        // VALIDAÇÃO DE WHITELIST: Verifica no banco de dados
         // E-mails de gestão são isentos da verificação de whitelist
-        if (!MANAGEMENT_EMAILS.includes(displayEmail) && !isProfessorRegistered(displayEmail)) {
-          console.error('❌ [LOGIN] E-mail não cadastrado no sistema:', displayEmail);
-          await supabase.auth.signOut(); // Faz logout automático
-          throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ CADASTRADO NA PLATAFORMA. CONTATE A GESTÃO PARA AUTORIZAÇÃO.');
+        if (!MANAGEMENT_EMAILS.includes(displayEmail)) {
+          const { data: authorized, error: authCheckError } = await (window as any).supabase
+            .from('authorized_professors')
+            .select('email')
+            .eq('email', displayEmail.toLowerCase().trim())
+            .single();
+
+          if (!authorized && !isProfessorRegistered(displayEmail)) {
+            console.error('❌ [LOGIN] E-mail não autorizado no banco:', displayEmail);
+            await supabase.auth.signOut();
+            throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ AUTORIZADO NA PLATAFORMA. CONTATE A GESTÃO.');
+          }
         }
 
         console.log('✅ [LOGIN] Acesso autorizado!');
@@ -167,13 +175,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (data.user) {
-        // VALIDAÇÃO DE WHITELIST: Verifica se professor está cadastrado
+        // VALIDAÇÃO DE WHITELIST: Verifica no banco de dados
         // E-mails de gestão são isentos da verificação de whitelist
-        if (!MANAGEMENT_EMAILS.includes(lowerEmail) && !isProfessorRegistered(lowerEmail)) {
-          console.error('❌ [CADASTRO] E-mail não autorizado:', lowerEmail);
-          // Remove a conta criada pois não está autorizada
-          await supabase.auth.signOut();
-          throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ AUTORIZADO. APENAS PROFESSORES PRÉ-CADASTRADOS PODEM ACESSAR A PLATAFORMA. CONTATE A GESTÃO.');
+        if (!MANAGEMENT_EMAILS.includes(lowerEmail)) {
+          const { data: authorized } = await (window as any).supabase
+            .from('authorized_professors')
+            .select('email')
+            .eq('email', lowerEmail)
+            .single();
+
+          if (!authorized && !isProfessorRegistered(lowerEmail)) {
+            console.error('❌ [CADASTRO] E-mail não autorizado:', lowerEmail);
+            await supabase.auth.signOut();
+            throw new Error('ACESSO NEGADO: SEU E-MAIL NÃO ESTÁ AUTORIZADO. CONTATE A GESTÃO.');
+          }
         }
 
         // Com confirmação de e-mail desabilitada, o login é automático
@@ -221,7 +236,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       if (resetError) {
         console.error('❌ [RESET] Erro ao enviar e-mail:', resetError);
-        throw new Error('ERRO AO PROCESSAR SOLICITAÇÃO. TENTE NOVAMENTE EM ALGUNS INSTANTES.');
+
+        // Verifica se é erro de SMTP do Resend (Test Mode)
+        if (resetError.message.includes('450') || resetError.message.includes('testing emails')) {
+          throw new Error('O SERVIÇO DE E-MAIL ESTÁ EM MODO DE TESTE. O DOMÍNIO PRECISA SER VERIFICADO NO RESEND.');
+        }
+
+        throw new Error('ERRO AO PROCESSAR SOLICITAÇÃO. VERIFIQUE A CONFIGURAÇÃO SMTP NO SUPABASE OU TENTE NOVAMENTE.');
       }
 
       setMessage('SE O E-MAIL EXISTIR NO SISTEMA, VOCÊ RECEBERÁ AS INSTRUÇÕES EM BREVE.');
