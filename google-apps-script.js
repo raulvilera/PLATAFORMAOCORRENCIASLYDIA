@@ -55,6 +55,7 @@ function doGet(e) {
     }
 
     const headers = data[headerRowIndex].map(h => String(h).toUpperCase().trim());
+    const subHeaders = data[headerRowIndex + 1] ? data[headerRowIndex + 1].map(h => String(h).toUpperCase().trim()) : [];
     const classBlocks = [];
 
     // Identifica o início de cada bloco de turma e as colunas NOME e RA dentro dele
@@ -63,13 +64,17 @@ function doGet(e) {
             let nameIdx = -1;
             let raIdx = -1;
 
-            // Procurar NOME e RA nas colunas seguintes (até encontrar a próxima turma ou fim)
+            // Procurar NOME e RA na linha do cabeçalho OU na linha de baixo
             for (let j = i; j < headers.length; j++) {
                 if (j > i && (headers[j].includes('ANO') || headers[j].includes('SERIE') || headers[j].includes('SÉRIE'))) break;
 
-                const headerText = headers[j];
-                if (headerText === 'NOME' && nameIdx === -1) nameIdx = j;
-                if (headerText === 'RA' && raIdx === -1) raIdx = j;
+                // Checar na linha atual
+                if (headers[j] === 'NOME' && nameIdx === -1) nameIdx = j;
+                if (headers[j] === 'RA' && raIdx === -1) raIdx = j;
+
+                // Checar na linha de baixo (subHeaders)
+                if (subHeaders[j] === 'NOME' && nameIdx === -1) nameIdx = j;
+                if (subHeaders[j] === 'RA' && raIdx === -1) raIdx = j;
             }
 
             if (nameIdx !== -1) {
@@ -83,7 +88,9 @@ function doGet(e) {
     });
 
     const students = [];
-    const rows = data.slice(headerRowIndex + 1);
+    // Começar a ler as linhas de dados (pula as linhas de cabeçalho detectadas)
+    const dataStartRow = Math.max(headerRowIndex + 1, headerRowIndex + 2); // Pula pelo menos 1 ou 2 se houver subheader
+    const rows = data.slice(dataStartRow);
 
     rows.forEach(row => {
         classBlocks.forEach(block => {
@@ -112,6 +119,8 @@ function doGet(e) {
             sheetUsed: sheetName,
             headerRow: headerRowIndex + 1,
             detectedHeaders: headers.slice(0, 20),
+            subHeadersPreview: subHeaders.slice(0, 20),
+            rowsPreview: data.slice(0, 6).map(row => row.slice(0, 10)), // Preview das primeiras 6 linhas e 10 colunas
             availableSheets: allSheets
         }
     })).setMimeType(ContentService.MimeType.JSON);
