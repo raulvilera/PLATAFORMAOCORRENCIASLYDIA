@@ -231,7 +231,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(authEmail, {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `https://plataformaocorrenciaslydia.vercel.app/`,
       });
 
       if (resetError) {
