@@ -127,22 +127,52 @@ const App: React.FC = () => {
       let finalStudents: Student[] = [];
       let loadedFromSupabase = false;
 
-      // 1. Tentar carregar do Supabase primeiro (Fonte Primária)
+      // 1. Tentar carregar do Supabase primeiro (Fonte Primária) - COM PAGINAÇÃO
       if (isSupabaseConfigured && supabase && !forceSync) {
         try {
-          const { data, error } = await supabase.from('students').select('*').order('nome');
-          if (!error && data && data.length > 0) {
-            finalStudents = data.map(s => ({
+          let allData: any[] = [];
+          let errorOccurred = false;
+          let from = 0;
+          const PAGE_SIZE = 1000;
+          let hasMore = true;
+
+          while (hasMore) {
+            const { data, error } = await supabase
+              .from('students')
+              .select('*')
+              .order('nome')
+              .range(from, from + PAGE_SIZE - 1);
+
+            if (error) {
+              console.error('⚠️ Supabase Error fetching students:', error);
+              errorOccurred = true;
+              break;
+            }
+
+            if (data && data.length > 0) {
+              allData = [...allData, ...data];
+              if (data.length < PAGE_SIZE) {
+                hasMore = false;
+              } else {
+                from += PAGE_SIZE;
+              }
+            } else {
+              hasMore = false;
+            }
+          }
+
+          if (!errorOccurred && allData.length > 0) {
+            finalStudents = allData.map(s => ({
               id: s.id,
               nome: s.nome,
               ra: s.ra,
               turma: s.turma
             }));
             loadedFromSupabase = true;
-            console.log(`✅ Supabase: Carregados ${finalStudents.length} alunos`);
+            console.log(`✅ Supabase: Total de ${finalStudents.length} alunos carregados (Paginado)`);
           }
         } catch (e) {
-          console.warn('⚠️ Supabase: Falha ao carregar alunos');
+          console.warn('⚠️ Supabase: Falha ao carregar alunos:', e);
         }
       }
 
@@ -157,20 +187,30 @@ const App: React.FC = () => {
             // Sincronizar com Supabase se houver conexão
             if (isSupabaseConfigured && supabase) {
               try {
-                // Limpar tabela students para evitar duplicatas
+                // Limpar tabela students para evitar duplicatas (usando filtro 'neq' em campo garantido ou delete all se RLS permitir)
+                // Nota: No Supabase, delete sem filtro pode ser bloqueado dependendo da config.
+                // Mas aqui estamos limpando tudo para repopular.
                 await supabase.from('students').delete().filter('id', 'neq', '00000000-0000-0000-0000-000000000000');
 
-                const studentsToInsert = sheetsStudents.map((s, index) => ({
-                  id: `synced-${Date.now()}-${index}`,
-                  nome: s.nome,
-                  ra: s.ra,
-                  turma: s.turma
-                }));
+                // Inserir em lotes para evitar problemas de payload grande
+                const CHUNK_SIZE = 500;
+                for (let i = 0; i < sheetsStudents.length; i += CHUNK_SIZE) {
+                  const chunk = sheetsStudents.slice(i, i + CHUNK_SIZE);
+                  const studentsToInsert = chunk.map((s, index) => ({
+                    id: `synced-${Date.now()}-${i + index}`,
+                    nome: s.nome,
+                    ra: s.ra,
+                    turma: s.turma
+                  }));
 
-                const { error } = await supabase.from('students').insert(studentsToInsert);
-                if (!error) console.log('✅ Supabase: Dados sincronizados do Sheets');
+                  const { error } = await supabase.from('students').insert(studentsToInsert);
+                  if (error) {
+                    console.error(`❌ Erro ao sincronizar lote ${i / CHUNK_SIZE}:`, error.message);
+                  }
+                }
+                console.log('✅ Supabase: Sincronização completa concluída');
               } catch (syncError) {
-                console.warn('⚠️ Supabase: Erro na sincronização:', syncError);
+                console.warn('⚠️ Supabase: Erro crítico na sincronização:', syncError);
               }
             }
           }
