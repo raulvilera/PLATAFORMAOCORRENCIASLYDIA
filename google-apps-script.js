@@ -111,6 +111,7 @@ function doGet(e) {
             blocks: classBlocks.length,
             sheetUsed: sheetName,
             headerRow: headerRowIndex + 1,
+            detectedHeaders: headers.slice(0, 20),
             availableSheets: allSheets
         }
     })).setMimeType(ContentService.MimeType.JSON);
