@@ -38,48 +38,71 @@ const App: React.FC = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   useEffect(() => {
+    let authListener: any = null;
+
     const initApp = async () => {
+      // 1. Carregar cache de incidentes
       const cached = localStorage.getItem('lkm_incidents_cache');
       if (cached) setIncidents(JSON.parse(cached));
 
       if (isSupabaseConfigured && supabase) {
         try {
-          // 1. Detectar evento de recuperação de senha via listener oficial
-          supabase.auth.onAuthStateChange(async (event, session) => {
+          // 2. Detectar se viemos de um link de recuperação (pelo Hash)
+          const isRecovery = window.location.hash.includes('type=recovery') ||
+            window.location.hash.includes('access_token');
+
+          if (isRecovery) {
+            console.log('🔑 [APP] Link de recuperação detectado via Hash');
+            setView('resetPassword');
+          }
+
+          // 3. Listener de mudanças de estado (Auth)
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('🔔 [AUTH] Evento:', event);
 
             if (event === 'PASSWORD_RECOVERY') {
-              console.log('🔐 [APP] Modo de recuperação de senha ativado');
+              console.log('🔐 [APP] Modo de recuperação de senha ativado (Event)');
               setView('resetPassword');
               return;
             }
 
-            if (event === 'SIGNED_IN' && session?.user && view !== 'resetPassword') {
+            if (session?.user) {
+              // Se estamos em modo de recuperação, NÃO redirecionamos para o dashboard ainda
+              const urlHash = window.location.hash;
+              const currentView = urlHash.includes('type=recovery') ? 'resetPassword' : '';
+
+              if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                if (currentView !== 'resetPassword' && !urlHash.includes('recovery')) {
+                  const email = session.user.email!.toLowerCase();
+                  if (isProfessorRegistered(email)) {
+                    const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
+                    setUser({ email, role });
+                    setView('dashboard');
+                  } else {
+                    await supabase.auth.signOut();
+                    setUser(null);
+                    setView('login');
+                  }
+                }
+              }
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+              setView('login');
+            }
+          });
+
+          authListener = subscription;
+
+          // 4. Verificação inicial da sessão (caso o listener falhe)
+          if (!isRecovery) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
               const email = session.user.email!.toLowerCase();
               if (isProfessorRegistered(email)) {
                 const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
                 setUser({ email, role });
                 setView('dashboard');
-              } else {
-                await supabase.auth.signOut();
               }
-            }
-          });
-
-          // 2. Fallback para detecção via Hash (caso o listener demore)
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          if (hashParams.get('type') === 'recovery' || hashParams.get('access_token')) {
-            setView('resetPassword');
-          }
-
-          // 3. Verificar sessão atual se não estiver em modo de recuperação
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user && view !== 'resetPassword') {
-            const email = session.user.email!.toLowerCase();
-            if (isProfessorRegistered(email)) {
-              const role = MANAGEMENT_EMAILS.includes(email) ? 'gestor' : 'professor';
-              setUser({ email, role });
-              setView('dashboard');
             }
           }
         } catch (e) {
@@ -88,8 +111,13 @@ const App: React.FC = () => {
       }
       setLoading(false);
     };
+
     initApp();
-  }, [view]);
+
+    return () => {
+      if (authListener) authListener.unsubscribe();
+    };
+  }, []); // Sem dependência de [view] para evitar loop
 
   useEffect(() => {
     const loadStudentsData = async () => {
