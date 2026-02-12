@@ -13,6 +13,7 @@ interface ProfessorViewProps {
   onSave: (incident: Incident | Incident[]) => void;
   onDelete: (id: string) => void;
   onLogout: () => void;
+  onSyncStudents?: () => Promise<void>;
 }
 
 const LISTA_IRREGULARIDADES = [
@@ -20,7 +21,7 @@ const LISTA_IRREGULARIDADES = [
   'INDISCIPLINA', 'DESACATO', 'SEM TAREFA', 'SAIU SEM PERMISSÃO'
 ];
 
-const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students, classes, onSave, onDelete, onLogout }) => {
+const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students, classes, onSave, onDelete, onLogout, onSyncStudents }) => {
   const [professorName, setProfessorName] = useState('');
   const [classRoom, setClassRoom] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -160,6 +161,18 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
         </div>
         <div className="flex gap-4 sm:gap-6 items-center">
           <span className="text-[10px] font-bold text-white/70">{user.email}</span>
+          {onSyncStudents && (
+            <button
+              onClick={onSyncStudents}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase shadow-lg transition-all active:scale-95 flex items-center gap-2"
+              title="Sincronizar alunos do Google Sheets para o Supabase"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Sincronizar Alunos
+            </button>
+          )}
           <button onClick={onLogout} className="bg-white text-[#002b5c] px-5 py-1.5 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-gray-100 transition-all">Sair</button>
         </div>
       </header>
