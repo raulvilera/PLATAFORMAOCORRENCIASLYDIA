@@ -45,10 +45,65 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
   const [newProfNome, setNewProfNome] = useState('');
   const [isManagingProfs, setIsManagingProfs] = useState(false);
 
+  // Estados para Busca no Histórico Permanente
+  const [showPermanentSearch, setShowPermanentSearch] = useState(false);
+  const [permanentSearchTerm, setPermanentSearchTerm] = useState('');
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState<Student | null>(null);
+  const [studentHistory, setStudentHistory] = useState<Incident[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
   const ra = useMemo(() => {
     const s = students.find(st => st.nome === studentName && st.turma === classRoom);
     return s ? s.ra : '---';
   }, [studentName, classRoom, students]);
+
+  const fetchStudentHistory = async (student: Student) => {
+    setIsLoadingHistory(true);
+    setSelectedStudentForHistory(student);
+    try {
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('ra', student.ra)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setStudentHistory(data.map(i => ({
+          id: i.id,
+          studentName: i.student_name,
+          ra: i.ra,
+          classRoom: i.class_room,
+          professorName: i.professor_name,
+          discipline: i.discipline,
+          date: i.date,
+          time: i.time,
+          registerDate: i.register_date,
+          returnDate: i.return_date,
+          description: i.description,
+          irregularities: i.irregularities,
+          category: i.category,
+          severity: i.severity as any,
+          status: i.status as any,
+          source: i.source as any,
+          pdfUrl: i.pdf_url,
+          authorEmail: i.author_email,
+          managementFeedback: i.management_feedback,
+          lastViewedAt: i.last_viewed_at
+        })));
+      }
+    } catch (e) {
+      console.error("Erro ao buscar histórico:", e);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const filteredStudents = useMemo(() => {
+    if (!permanentSearchTerm) return [];
+    return students.filter(s =>
+      s.Nome.toUpperCase().startsWith(permanentSearchTerm.toUpperCase())
+    ).slice(0, 10); // Limitar a 10 resultados para performance e UI
+  }, [students, permanentSearchTerm]);
 
   const triggerPicker = (ref: React.RefObject<HTMLInputElement>) => {
     if (ref.current) {
@@ -329,7 +384,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
             <div className="flex items-center gap-4">
               <div className="flex flex-col">
                 <h3 className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Painel de Registros (Últimos 30 dias)</h3>
-                <button onClick={onOpenSearch} className="text-[9px] text-teal-400 font-black uppercase text-left hover:underline">Ir para Histórico Permanente</button>
+                <button
+                  onClick={() => setShowPermanentSearch(true)}
+                  className="text-[9px] text-teal-400 font-black uppercase text-left hover:underline flex items-center gap-1 group"
+                >
+                  Ir para Histórico Permanente
+                  <svg className="w-2.5 h-2.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
               <span className="bg-teal-500 text-white text-[8px] sm:text-[9px] px-3 py-1 rounded-full font-black uppercase whitespace-nowrap">{history.length} Recentes</span>
             </div>
@@ -481,6 +544,133 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                   Salvar Devolutiva
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Busca no Histórico Permanente */}
+      {showPermanentSearch && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in shadow-2xl">
+          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] overflow-hidden flex flex-col border border-white/20">
+            <div className="bg-[#002b5c] p-6 text-center shrink-0 border-b-4 border-orange-500">
+              <h3 className="text-white font-black text-xs uppercase tracking-[0.2em]">Busca Criteriosa no Histórico Permanente</h3>
+              <p className="text-orange-400 text-[9px] font-bold mt-1 uppercase">Localizar Aluno e Registros</p>
+            </div>
+
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-6">
+                {/* Campo de Busca */}
+                <div className="relative group">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-4 mb-2">Digite as iniciais do aluno</label>
+                  <div className="relative">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={permanentSearchTerm}
+                      onChange={(e) => {
+                        setPermanentSearchTerm(e.target.value.toUpperCase());
+                        setSelectedStudentForHistory(null);
+                        setStudentHistory([]);
+                      }}
+                      placeholder="EX: VA... (CARREGARÁ APENAS INICIAIS CORRESPONDENTES)"
+                      className="w-full h-16 pl-14 pr-6 bg-gray-50 border-2 border-gray-100 rounded-3xl text-sm font-black outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all text-black uppercase tracking-wider"
+                    />
+                    <svg className="w-6 h-6 absolute left-5 top-5 text-gray-300 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Resultados da Busca (Alunos) */}
+                {permanentSearchTerm && !selectedStudentForHistory && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-fade-in">
+                    {filteredStudents.length > 0 ? filteredStudents.map(s => (
+                      <button
+                        key={s.ra}
+                        onClick={() => fetchStudentHistory(s)}
+                        className="flex flex-col items-start p-4 bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl transition-all group"
+                      >
+                        <span className="text-[11px] font-black text-[#002b5c] group-hover:text-orange-600 transition-colors">{s.nome}</span>
+                        <div className="flex gap-3 mt-1">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase">Turma: {s.turma}</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase">RA: {s.ra}</span>
+                        </div>
+                      </button>
+                    )) : (
+                      <div className="col-span-full py-10 text-center">
+                        <p className="text-gray-300 font-black uppercase text-[10px] tracking-[0.2em]">Nenhum aluno encontrado com estas iniciais</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Histórico do Aluno Selecionado */}
+                {selectedStudentForHistory && (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="p-6 bg-orange-50 border border-orange-100 rounded-[32px] flex flex-col md:flex-row justify-between items-center gap-4">
+                      <div>
+                        <h4 className="text-orange-800 font-black text-xs uppercase tracking-wider">{selectedStudentForHistory.nome}</h4>
+                        <p className="text-orange-600/60 text-[9px] font-bold uppercase">RA: {selectedStudentForHistory.ra} | TURMA: {selectedStudentForHistory.turma}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedStudentForHistory(null)}
+                        className="text-[9px] font-black text-orange-600 uppercase hover:underline"
+                      >
+                        Trocar Aluno
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Histórico Acadêmico/Disciplinar</h5>
+                      {isLoadingHistory ? (
+                        <div className="py-20 flex flex-col items-center justify-center">
+                          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : studentHistory.length > 0 ? (
+                        <div className="space-y-4">
+                          {studentHistory.map(inc => (
+                            <div key={inc.id} className="p-6 bg-white border border-gray-100 rounded-[28px] shadow-sm hover:shadow-md transition-all flex flex-col gap-3">
+                              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[10px] font-black text-gray-500">{inc.date}</span>
+                                  <StatusBadge status={inc.status} size="small" />
+                                </div>
+                                <span className="px-3 py-1 bg-gray-100 rounded-lg text-[8px] font-black text-gray-500 uppercase">{inc.category}</span>
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-600 uppercase italic line-clamp-3">{inc.description}</p>
+                              <div className="pt-2 border-t border-gray-50 flex justify-between items-center">
+                                <span className="text-[8px] font-bold text-gray-400 uppercase">PROF: {inc.professorName}</span>
+                                <div className="flex gap-2">
+                                  <button onClick={() => generateIncidentPDF(inc, 'view')} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                  <button onClick={() => generateIncidentPDF(inc, 'download')} className="p-2 text-green-500 hover:bg-green-50 rounded-lg transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg></button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-14 text-center bg-gray-50 rounded-[32px] border border-dashed border-gray-200">
+                          <p className="text-gray-300 font-black uppercase text-[10px] tracking-[0.2em]">Nenhum registro encontrado para este aluno</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-center shrink-0">
+              <button
+                onClick={() => {
+                  setShowPermanentSearch(false);
+                  setPermanentSearchTerm('');
+                  setSelectedStudentForHistory(null);
+                }}
+                className="px-12 py-4 bg-[#002b5c] text-white font-black text-[10px] uppercase rounded-full hover:shadow-xl transition-all active:scale-95"
+              >
+                Fechar Histórico
+              </button>
             </div>
           </div>
         </div>
