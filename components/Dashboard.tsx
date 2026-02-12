@@ -433,6 +433,59 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
         </section>
       </main>
 
+      {/* Modal de Atualização de Status e Devolutiva */}
+      {isUpdatingStatus && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in shadow-2xl">
+          <div className="bg-white w-full max-w-lg rounded-[32px] overflow-hidden flex flex-col border border-white/20">
+            <div className="bg-[#002b5c] p-6 text-center border-b-4 border-teal-500">
+              <h3 className="text-white font-black text-xs uppercase tracking-[0.2em]">Sinalizar Estágio da Ocorrência</h3>
+              <p className="text-teal-400 text-[9px] font-bold mt-1 uppercase">{isUpdatingStatus.studentName}</p>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-2">Status da Ocorrência</label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value as any)}
+                  className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-2xl text-[11px] font-black outline-none focus:ring-2 focus:ring-teal-500 transition-all text-black"
+                >
+                  <option value="Pendente">🔴 PENDENTE</option>
+                  <option value="Em Análise">🟡 EM ANÁLISE</option>
+                  <option value="Resolvido">🟢 RESOLVIDO</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-2">Justificativa / Devolutiva</label>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={4}
+                  placeholder="Descreva o estágio atual ou a resolução da ocorrência..."
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-teal-500 transition-all text-black uppercase"
+                ></textarea>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsUpdatingStatus(null)}
+                  className="flex-1 py-4 bg-gray-100 text-gray-500 font-black text-[10px] uppercase rounded-2xl hover:bg-gray-200 transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUpdateStatus}
+                  className="flex-1 py-4 bg-teal-500 text-white font-black text-[10px] uppercase rounded-2xl hover:bg-teal-600 transition-all shadow-md active:scale-95"
+                >
+                  Salvar Devolutiva
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Gerenciamento de Professores */}
       {showProfessorsModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in shadow-2xl">

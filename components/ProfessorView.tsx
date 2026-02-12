@@ -323,8 +323,15 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                     <td className="p-4 max-w-xs text-gray-500 italic">
                       <div className="truncate">{inc.description}</div>
                       {inc.managementFeedback && (
-                        <div className="mt-2 p-2 bg-teal-50 border-l-2 border-teal-500 text-teal-800 font-bold text-[8px] not-italic leading-tight">
-                          DEVOLUTIVA GESTÃO: {inc.managementFeedback}
+                        <div className={`mt-2 p-3 rounded-lg border-l-4 font-bold text-[8px] not-italic leading-tight shadow-sm animate-fade-in
+                          ${inc.status === 'Resolvido' ? 'bg-green-50 border-green-500 text-green-800' :
+                            inc.status === 'Em Análise' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' :
+                              'bg-red-50 border-red-500 text-red-800'}`}>
+                          <div className="flex items-center gap-1 mb-1">
+                            <span>{inc.status === 'Resolvido' ? '✅' : inc.status === 'Em Análise' ? '🟡' : '🔴'}</span>
+                            <span className="uppercase tracking-widest">Devolutiva da Gestão:</span>
+                          </div>
+                          {inc.managementFeedback}
                         </div>
                       )}
                     </td>
