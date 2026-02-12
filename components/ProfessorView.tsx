@@ -445,8 +445,8 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
               </tbody>
             </table>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Modal de Busca no Histórico Permanente */}
       {showPermanentSearch && (
