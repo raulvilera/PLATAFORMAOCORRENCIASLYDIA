@@ -573,7 +573,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                         setSelectedStudentForHistory(null);
                         setStudentHistory([]);
                       }}
-                      placeholder="EX: VA... (CARREGARÁ APENAS INICIAIS CORRESPONDENTES)"
+                      placeholder="(CARREGARÁ APENAS INICIAIS CORRESPONDENTES)"
                       className="w-full h-16 pl-14 pr-6 bg-gray-50 border-2 border-gray-100 rounded-3xl text-sm font-black outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all text-black uppercase tracking-wider"
                     />
                     <svg className="w-6 h-6 absolute left-5 top-5 text-gray-300 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
