@@ -101,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
   const filteredStudents = useMemo(() => {
     if (!permanentSearchTerm) return [];
     return students.filter(s =>
-      s.Nome.toUpperCase().startsWith(permanentSearchTerm.toUpperCase())
+      s.nome.toUpperCase().startsWith(permanentSearchTerm.toUpperCase())
     ).slice(0, 10); // Limitar a 10 resultados para performance e UI
   }, [students, permanentSearchTerm]);
 
