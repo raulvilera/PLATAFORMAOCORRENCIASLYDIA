@@ -585,11 +585,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
                 {/* Resultados da Busca (Alunos) */}
                 {permanentSearchTerm && !selectedStudentForHistory && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-fade-in">
-                    {filteredStudents.length > 0 ? filteredStudents.map(s => (
+                    {filteredStudents.length > 0 ? filteredStudents.map((s, idx) => (
                       <button
                         key={s.ra}
                         onClick={() => fetchStudentHistory(s)}
-                        className="flex flex-col items-start p-4 bg-gray-50 hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl transition-all group"
+                        className={`flex flex-col items-start p-4 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-orange-50 border border-gray-100 hover:border-orange-200 rounded-2xl transition-all group`}
                       >
                         <span className="text-[11px] font-black text-[#002b5c] group-hover:text-orange-600 transition-colors">{s.nome}</span>
                         <div className="flex gap-3 mt-1">

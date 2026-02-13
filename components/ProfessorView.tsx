@@ -260,13 +260,13 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                   <span className="text-[9px] font-black text-white bg-black/30 px-3 py-1 rounded-full uppercase">{selectedStudents.length} selecionado(s)</span>
                 </div>
                 <div className="h-64 overflow-y-auto border-2 border-white/10 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-black/10 backdrop-blur-sm custom-scrollbar">
-                  {studentsInClass.length > 0 ? studentsInClass.map(a => (
+                  {studentsInClass.length > 0 ? studentsInClass.map((a, idx) => (
                     <label
                       key={a.ra}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer 
                         ${selectedStudents.includes(a.nome)
                           ? 'bg-[#003d7a] border-blue-400 text-white shadow-[inset_4px_4px_8px_rgba(0,0,0,0.5)] translate-y-0.5'
-                          : 'bg-white border-white/10 text-black shadow-[4px_4px_10px_rgba(0,0,0,0.2),-2px_-2px_8px_rgba(255,255,255,0.1)] hover:bg-gray-50'}`}
+                          : `${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} border-white/10 text-black shadow-[4px_4px_10px_rgba(0,0,0,0.2),-2px_-2px_8px_rgba(255,255,255,0.1)] hover:bg-gray-50`}`}
                     >
                       <input type="checkbox" checked={selectedStudents.includes(a.nome)} onChange={() => toggleStudent(a.nome)} className="hidden" />
                       <div className="flex flex-col truncate">
@@ -484,11 +484,11 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                 {/* Resultados da Busca (Alunos) */}
                 {permanentSearchTerm && !selectedStudentForHistory && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-fade-in">
-                    {filteredStudentsForSearch.length > 0 ? filteredStudentsForSearch.map(s => (
+                    {filteredStudentsForSearch.length > 0 ? filteredStudentsForSearch.map((s, idx) => (
                       <button
                         key={s.ra}
                         onClick={() => fetchStudentHistory(s)}
-                        className="flex flex-col items-start p-4 bg-gray-50 hover:bg-teal-50 border border-gray-100 hover:border-teal-200 rounded-2xl transition-all group"
+                        className={`flex flex-col items-start p-4 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-teal-50 border border-gray-100 hover:border-teal-200 rounded-2xl transition-all group`}
                       >
                         <span className="text-[11px] font-black text-[#002b5c] group-hover:text-teal-600 transition-colors">{s.nome}</span>
                         <div className="flex gap-3 mt-1">

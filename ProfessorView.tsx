@@ -5,26 +5,18 @@ interface ProfessorViewProps {
   user: User;
   incidents: Incident[];
   students: Student[];
+  classes: string[];
   onSave: (incident: Incident | Incident[]) => void;
   onLogout: () => void;
 }
 
-const DATA_TURMAS = [
-  '6ºAno A', '6ºAno B', '6ºAno C', '6ºAno D', '6ºAno E', '6ºAno F',
-  '7ºAno A', '7ºAno B', '7ºAno C', '7ºAno D', '7ºAno E', '7ºAno F',
-  '8ºAno A', '8ºAno B', '8ºAno C', '8ºAno D', '8ºAno E', '8ºAno F',
-  '9ºAno A', '9ºAno B', '9ºAno C', '9ºAno D',
-  '1ª Série A', '1ª Série B', '1ª Série C', '1ª Série D', '1ª Série E', '1ª Série F', '1ª Série G', '1ª Série H',
-  '2ª Série A', '2ª Série B', '2ª Série C', '2ª Série D', '2ª Série E', '2ª Série F', '2ª Série G', '2ª Série H',
-  '3ª Série A', '3ª Série B', '3ª Série C', '3ª Série D', '3ª Série E', '3ª Série F', '3ª Série G', '3ª Série H'
-];
 
 const LISTA_IRREGULARIDADES = [
   'ATRASO', 'SEM MATERIAL', 'USO DE CELULAR', 'CONVERSA', 'DESRESPEITO',
   'INDISCIPLINA', 'DESACATO', 'SEM TAREFA', 'SAIU SEM PERMISSÃO'
 ];
 
-const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students, onSave, onLogout }) => {
+const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students, classes, onSave, onLogout }) => {
   const [professorName, setProfessorName] = useState('');
   const [classRoom, setClassRoom] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -157,7 +149,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
                   <label className="text-[10px] font-black text-white uppercase tracking-widest">TURMA / SÉRIE</label>
                   <select value={classRoom} onChange={e => { setClassRoom(e.target.value); setSelectedStudents([]); }} className="w-full h-11 px-4 bg-white border border-gray-300 rounded-xl text-xs font-bold text-black outline-none focus:ring-2 focus:ring-blue-400">
                     <option value="">Selecione a turma...</option>
-                    {DATA_TURMAS.map(t => <option key={t} value={t}>{t}</option>)}
+                    {classes.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
               </div>

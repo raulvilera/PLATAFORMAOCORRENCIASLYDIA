@@ -17,3 +17,12 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Zebra striping for select options (if supported by browser) */
+select option:nth-child(even) {
+  background-color: #f1f5f9;
+}
+
+select option:nth-child(odd) {
+  background-color: #ffffff;
+}

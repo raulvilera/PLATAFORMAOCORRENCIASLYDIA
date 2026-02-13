@@ -230,11 +230,28 @@ const App: React.FC = () => {
       // Gerar lista de turmas dinamicamente
       const uniqueClasses = Array.from(new Set(finalStudents.map(s => s.turma)));
       const sortedClasses = uniqueClasses.sort((a, b) => {
-        const isAno_a = a.includes('Ano');
-        const isAno_b = b.includes('Ano');
-        if (isAno_a && !isAno_b) return -1;
-        if (!isAno_a && isAno_b) return 1;
-        return a.localeCompare(b, undefined, { numeric: true });
+        const getOrder = (s: string) => {
+          // Normaliza: remove acentos e caracteres especiais, mantendo apenas letras e números
+          const norm = s.toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+            .replace(/[^A-Z0-9]/g, '');      // Mantém apenas letras e números
+
+          if (norm.includes('6ANO')) return 1;
+          if (norm.includes('7ANO')) return 2;
+          if (norm.includes('8ANO')) return 3;
+          if (norm.includes('9ANO')) return 4;
+          if (norm.includes('1SERIE')) return 5;
+          if (norm.includes('2SERIE')) return 6;
+          if (norm.includes('3SERIE')) return 7;
+          return 99;
+        };
+
+        const orderA = getOrder(a);
+        const orderB = getOrder(b);
+
+        if (orderA !== orderB) return orderA - orderB;
+        return a.localeCompare(b, 'pt-BR', { numeric: true });
       });
 
       setClasses(sortedClasses);
