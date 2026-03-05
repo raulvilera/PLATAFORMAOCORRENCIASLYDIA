@@ -645,6 +645,8 @@ const App = () => {
     setViewMode(prev => prev === 'gestor' ? 'professor' : 'gestor');
   };
 
+  const isRestrictedManagementOnly = user?.email === 'cadastroslkm@gmail.com';
+
   const commonProps = {
     user: user!,
     incidents: incidents,
@@ -659,12 +661,12 @@ const App = () => {
   };
 
   // Determina qual visualização renderizar
-  const shouldShowGestorView = hasDualAccess ? viewMode === 'gestor' : user?.role === 'gestor';
+  const shouldShowGestorView = isRestrictedManagementOnly ? true : (hasDualAccess ? viewMode === 'gestor' : user?.role === 'gestor');
 
   return (
     <div className="relative min-h-screen bg-[#001a35]">
-      {/* Botão de alternância para usuários com acesso dual */}
-      {hasDualAccess && (
+      {/* Botão de alternância para usuários com acesso dual (oculto para contas restritas) */}
+      {hasDualAccess && !isRestrictedManagementOnly && (
         <button
           onClick={handleToggleView}
           className="fixed top-4 right-4 z-50 bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-wider shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
@@ -689,7 +691,7 @@ const App = () => {
 
       {/* Marcador de Versão para Depuração */}
       <div className="fixed bottom-2 left-2 text-[8px] font-black text-gray-500/30 uppercase pointer-events-none select-none z-[100]">
-        Build Version: 1.15.2
+        Build Version: 1.15.3
       </div>
     </div>
   );
