@@ -12,7 +12,7 @@ import { saveToGoogleSheets, loadStudentsFromSheets } from './services/sheetsSer
 import { isProfessorRegistered, getProfessorRoleFromEmail } from './professorsData';
 
 // E-mails com acesso dual (gestor + professor)
-const DUAL_ACCESS_EMAILS = ['vilera@prof.educacao.sp.gov.br', 'cadastroslkm@gmail.com'];
+const DUAL_ACCESS_EMAILS = ['vilera@prof.educacao.sp.gov.br'];
 
 import { normalizeClassName } from './utils/formatters';
 
