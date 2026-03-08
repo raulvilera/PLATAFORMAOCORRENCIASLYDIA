@@ -109,7 +109,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         const fetchRoleWithTimeout = async () => {
           const emailBase = displayEmail.split('@')[0];
           const query = supabase
-            .from('authorized_professors')
+            .from('fioravante_authorized_professors')
             .select('role')
             .or(`email.eq.${emailBase}@prof.educacao.sp.gov.br,email.eq.${emailBase}@professor.educacao.sp.gov.br`)
             .maybeSingle();
@@ -199,7 +199,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Busca o role e autorização no banco de dados
         const emailBase = lowerEmail.split('@')[0];
         const { data: authData } = await supabase
-          .from('authorized_professors')
+          .from('fioravante_authorized_professors')
           .select('role')
           .or(`email.eq.${emailBase}@prof.educacao.sp.gov.br,email.eq.${emailBase}@professor.educacao.sp.gov.br`)
           .maybeSingle();
@@ -289,22 +289,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const LOGO_LKM_CIRCULAR = "/logo.png";
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#000d1a] p-4 font-sans relative overflow-hidden fixed inset-0">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#000d1a] via-[#001a35] to-[#002b5c] opacity-100"></div>
+    <div className="h-screen w-full flex items-center justify-center bg-transparent p-4 font-sans relative overflow-hidden fixed inset-0">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#001a35] via-[#001a35]/80 to-[#d1d5db] opacity-100"></div>
 
       <div className="w-full max-w-[440px] bg-white rounded-[60px] shadow-[0_40px_80px_rgba(0,0,0,0.7)] flex flex-col items-center z-10 relative py-10 px-10 border border-white/10 animate-fade-in overflow-y-auto max-h-[95vh] custom-scrollbar">
 
-        <div className="mb-4 mt-2 relative">
-          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
-          <img src={LOGO_LKM_CIRCULAR} alt="LKM Logo" className="w-20 h-20 object-contain relative z-10 drop-shadow-2xl" />
-        </div>
 
         <div className="text-center mb-8">
           <h1 className="text-[#002b5c] text-lg font-black uppercase tracking-tight">
-            {authMode === 'login' ? 'PORTAL LYDIA KITZ' : authMode === 'register' ? 'CRIAR NOVA CONTA' : 'RECUPERAR ACESSO'}
+            {authMode === 'login' ? 'PORTAL FIORAVANTE IERVOLINO' : authMode === 'register' ? 'CRIAR NOVA CONTA' : 'RECUPERAR ACESSO'}
           </h1>
           <div className="h-1.5 w-10 bg-teal-500 mx-auto mt-2 rounded-full"></div>
           <p className="text-gray-400 text-[8px] font-black uppercase tracking-[0.4em] mt-3">
@@ -415,7 +410,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <div className="mt-8 text-center w-full">
           <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest leading-relaxed">
-            ESTE PORTAL É DE USO EXCLUSIVO DOS<br />PROFISSIONAIS DA EE LYDIA KITZ MOREIRA
+            ESTE PORTAL É DE USO EXCLUSIVO DOS<br />PROFISSIONAIS DA E.E. FIORAVANTE IERVOLINO
           </p>
         </div>
 

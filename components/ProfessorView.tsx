@@ -62,7 +62,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
     setSelectedStudentForHistory(student);
     try {
       const { data, error } = await supabase
-        .from('incidents')
+        .from('fioravante_records')
         .select('*')
         .eq('ra', student.ra)
         .order('created_at', { ascending: false });
@@ -198,7 +198,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
 
     try {
       const { error } = await supabase
-        .from('incidents')
+        .from('fioravante_records')
         .update({
           status: newStatus,
           management_feedback: feedback.toUpperCase(),
@@ -244,7 +244,7 @@ const ProfessorView: React.FC<ProfessorViewProps> = ({ user, incidents, students
       <header className="bg-[#002b5c] text-white px-4 sm:px-8 py-4 flex flex-col sm:flex-row justify-between items-center sticky top-0 z-50 shadow-2xl gap-4 sm:gap-0 border-b border-white/10">
         <div className="flex flex-col items-center sm:items-start">
           <h1 className="text-sm font-black uppercase text-teal-400">Área do Professor 2026</h1>
-          <p className="text-[9px] font-bold text-white/50 uppercase">EE Lydia Kitz Moreira</p>
+          <p className="text-[9px] font-bold text-white/50 uppercase">E.E. Fioravante Iervolino</p>
         </div>
         <div className="flex gap-4 sm:gap-6 items-center">
           <span className="text-[10px] font-bold text-white/70">{user.email}</span>

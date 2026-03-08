@@ -25,7 +25,7 @@
  */
 
 // ─── CONSTANTES ─────────────────────────────────────────────
-var SPREADSHEET_ID = '1u7qMsMHkZT47OZdar5qvshQDRA8XJrLgDjAZVOViAio';
+const SPREADSHEET_ID = '1I2e7NexDqkZZ6Pc6fEQ6QTJCdY2xGgo_SicORFv4zGI';
 var DEFAULT_SHEET = 'BANCODEDADOSGERAL';
 
 // Quantas linhas iniciais verificar procurando o cabeçalho de turmas

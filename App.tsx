@@ -55,7 +55,7 @@ const App = () => {
           const fetchRoleSafe = async (email: string) => {
             const emailBase = email.toLowerCase().split('@')[0];
             const query = supabase
-              .from('authorized_professors')
+              .from('fioravante_authorized_professors')
               .select('role')
               .or(`email.eq.${email},email.eq.${emailBase}@prof.educacao.sp.gov.br,email.eq.${emailBase}@professor.educacao.sp.gov.br`)
               .maybeSingle();
@@ -169,7 +169,7 @@ const App = () => {
 
           while (hasMore) {
             const { data, error } = await supabase
-              .from('students')
+              .from('fioravante_students')
               .select('*')
               .order('nome')
               .range(from, from + PAGE_SIZE - 1);
@@ -225,7 +225,7 @@ const App = () => {
               try {
                 // Apaga APENAS registros de sincronizações automáticas anteriores (prefixo 'synced-')
                 // Preserva registros inseridos manualmente (ex: '7anoe-', 'manual-')
-                await supabase.from('students').delete().like('id', 'synced-%');
+                await supabase.from('fioravante_students').delete().like('id', 'synced-%');
 
                 // Inserir em lotes para evitar problemas de payload grande
                 const CHUNK_SIZE = 500;
@@ -238,7 +238,7 @@ const App = () => {
                     turma: normalizeClassName(s.turma) // Garante normalização correta antes de salvar
                   }));
 
-                  const { error } = await supabase.from('students').insert(studentsToInsert);
+                  const { error } = await supabase.from('fioravante_students').insert(studentsToInsert);
                   if (error) {
                     console.error(`❌ Erro ao sincronizar lote ${i / CHUNK_SIZE}:`, error.message);
                   }

@@ -63,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
     setSelectedStudentForHistory(student);
     try {
       const { data, error } = await supabase
-        .from('incidents')
+        .from('fioravante_records')
         .select('*')
         .eq('ra', student.ra)
         .order('created_at', { ascending: false });
@@ -182,7 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
 
   const fetchProfessors = async () => {
     setIsManagingProfs(true);
-    const { data, error } = await supabase.from('authorized_professors').select('email, nome').order('nome');
+    const { data, error } = await supabase.from('fioravante_authorized_professors').select('email, nome').order('nome');
     if (data) setProfessorsList(data);
     setIsManagingProfs(false);
   };
@@ -192,7 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
     if (!newProfEmail || !newProfNome) return;
 
     setIsManagingProfs(true);
-    const { error } = await supabase.from('authorized_professors').insert([
+    const { error } = await supabase.from('fioravante_authorized_professors').insert([
       { email: newProfEmail.toLowerCase().trim(), nome: newProfNome.toUpperCase().trim() }
     ]);
 
@@ -312,10 +312,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, incidents, students, classe
 
   return (
     <div className="min-h-screen bg-[#001a35] font-sans pb-12 overflow-x-hidden">
-      <header className="bg-[#002b5c] text-white px-4 sm:px-8 py-3 flex flex-col sm:flex-row justify-between items-center border-b border-white/10 sticky top-0 z-[50] shadow-xl gap-2 sm:gap-0">
+      <header className="bg-white/20 backdrop-blur-md text-[#001a35] px-4 sm:px-8 py-3 flex flex-col sm:flex-row justify-between items-center border-b border-white/20 sticky top-0 z-[50] shadow-xl gap-2 sm:gap-0">
         <div className="flex flex-col items-center sm:items-start">
-          <h1 className="text-xs sm:text-sm font-black uppercase tracking-widest text-teal-400 text-center sm:text-left">Gestão Lydia Kitz Moreira 2026</h1>
-          <p className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase">Painel de Controle Administrativo</p>
+          <h1 className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#001a35] text-center sm:text-left">Gestão Fioravante Iervolino 2026</h1>
+          <p className="text-[8px] sm:text-[9px] font-bold text-[#001a35]/60 uppercase">Painel de Controle Administrativo</p>
         </div>
         <div className="flex gap-4 sm:gap-6 items-center">
           <div className="hidden md:flex flex-col items-end">

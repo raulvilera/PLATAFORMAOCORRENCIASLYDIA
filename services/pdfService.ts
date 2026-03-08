@@ -215,30 +215,25 @@ export const uploadPDFToStorage = async (incident: Incident): Promise<string | n
     doc.setLineWidth(0.5);
     doc.rect(7, 7, pageWidth - 14, pageHeight - 14);
 
-    if (brasaoData) {
-      const targetW = 22;
-      const targetH = (brasaoData.height / brasaoData.width) * targetW;
-      doc.addImage(brasaoData.data, 'PNG', 12, 12, targetW, targetH);
-    }
-
+    // Cabeçalho da Escola
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    const headerLines = [
-      "GOVERNO DO ESTADO DE SÃO PAULO",
-      "SECRETARIA DE ESTADO DA EDUCAÇÃO",
-      "DIRETORIA DE ENSINO REGIÃO GUARULHOS NORTE – EE LYDIA KITZ MOREIRA",
-      "RUA DOREZÓPOLIS, 294 - JARDIM SANTA CLARA – CEP: 07123-120",
-      "GUARULHOS - SP    Telefone: 2403-3105 / 2404-3535"
-    ];
+    doc.text("GOVERNO DO ESTADO DE SÃO PAULO", pageWidth / 2, 15, { align: "center" });
+    doc.text("SECRETARIA DE ESTADO DA EDUCAÇÃO", pageWidth / 2, 20, { align: "center" });
+    doc.text("DIRETORIA DE ENSINO - REGIÃO DE GUARULHOS SUL", pageWidth / 2, 25, { align: "center" });
+    doc.text("E.E. FIORAVANTE IERVOLINO", pageWidth / 2, 30, { align: "center" });
 
-    let currentY = 15;
-    headerLines.forEach(line => {
-      doc.text(line, pageWidth / 2, currentY, { align: 'center' });
-      currentY += 4.2;
-    });
+    // Linha divisória
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 35, pageWidth - margin, 35);
 
-    currentY += 12;
+    let currentY = 45;
+    doc.setFontSize(12);
+    doc.text("RELATÓRIO DE OCORRÊNCIA ESCOLAR", pageWidth / 2, currentY, { align: "center" });
+
+    currentY += 15;
     doc.setFontSize(14);
     doc.setTextColor(0, 84, 166);
 
