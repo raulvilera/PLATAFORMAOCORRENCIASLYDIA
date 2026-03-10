@@ -37,15 +37,20 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ onComplete, onCancel }) =
             if (updateError) {
                 console.error('❌ [RESET] Erro ao atualizar senha:', updateError);
 
-                // Melhorar mensagens para o usuário
-                if (updateError.message.includes('expired')) {
-                    throw new Error('ESTE LINK JÁ EXPIROU. POR FAVOR, SOLICITE UM NOVO E-MAIL DE REDEFINIÇÃO.');
+                // Traduzir mensagens de erro do Supabase para português
+                const msg = updateError.message.toLowerCase();
+                if (msg.includes('expired') || msg.includes('expirado')) {
+                    throw new Error('ESTE LINK JÁ EXPIROU. SOLICITE UM NOVO E-MAIL DE REDEFINIÇÃO.');
                 }
-                if (updateError.message.includes('same as old')) {
-                    throw new Error('A NOVA SENHA NÃO PODE SER IGUAL À ANTERIOR.');
+                if (msg.includes('same') || msg.includes('different') || msg.includes('old password') || msg.includes('anterior')) {
+                    throw new Error('A NOVA SENHA NÃO PODE SER IGUAL À SENHA ANTERIOR. ESCOLHA UMA SENHA DIFERENTE.');
+                }
+                if (msg.includes('weak') || msg.includes('too weak')) {
+                    throw new Error('SENHA MUITO FRACA. USE AO MENOS 6 CARACTERES.');
                 }
 
-                throw new Error(updateError.message.toUpperCase());
+                // Tradução genérica de mensagens comuns do Supabase
+                throw new Error('ERRO AO ATUALIZAR SENHA. TENTE NOVAMENTE COM UMA SENHA DIFERENTE.');
             }
 
             console.log('✅ [RESET] Senha atualizada com sucesso!');
