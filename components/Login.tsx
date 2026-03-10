@@ -277,18 +277,29 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(authEmail, {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: 'https://cadastroslkm.vercel.app/',
       });
 
       if (resetError) {
-        console.error('❌ [RESET] Erro ao enviar e-mail:', resetError);
+        console.error('❌ [RESET] Erro ao enviar e-mail:', resetError.message);
 
-        // Verifica se é erro de SMTP do Resend (Test Mode)
-        if (resetError.message.includes('450') || resetError.message.includes('testing emails')) {
-          throw new Error('O SERVIÇO DE E-MAIL ESTÁ EM MODO DE TESTE. O DOMÍNIO PRECISA SER VERIFICADO NO RESEND.');
+        const errMsg = resetError.message.toLowerCase();
+
+        if (errMsg.includes('450') || errMsg.includes('testing emails') || errMsg.includes('test mode')) {
+          throw new Error('O SERVIÇO DE E-MAIL ESTÁ EM MODO DE TESTE. CONTATE A GESTÃO.');
+        }
+        if (errMsg.includes('rate limit') || errMsg.includes('too many')) {
+          throw new Error('MUITAS SOLICITAÇÕES. AGUARDE ALGUNS MINUTOS E TENTE NOVAMENTE.');
+        }
+        if (errMsg.includes('smtp') || errMsg.includes('email') || errMsg.includes('send')) {
+          throw new Error('FALHA AO ENVIAR O E-MAIL. VERIFIQUE SE O ENDEREÇO ESTÁ CORRETO E TENTE NOVAMENTE.');
+        }
+        if (errMsg.includes('user not found') || errMsg.includes('not found')) {
+          throw new Error('E-MAIL NÃO ENCONTRADO NO SISTEMA. VERIFIQUE O ENDEREÇO DIGITADO.');
         }
 
-        throw new Error('ERRO AO PROCESSAR SOLICITAÇÃO. VERIFIQUE A CONFIGURAÇÃO SMTP NO SUPABASE OU TENTE NOVAMENTE.');
+        // Mostra o erro real traduzido genericamente
+        throw new Error('ERRO AO ENVIAR INSTRUÇÕES: ' + resetError.message.toUpperCase());
       }
 
       setMessage('SE O E-MAIL EXISTIR NO SISTEMA, VOCÊ RECEBERÁ AS INSTRUÇÕES EM BREVE.');
