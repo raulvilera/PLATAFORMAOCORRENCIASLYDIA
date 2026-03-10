@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -30,6 +29,9 @@ const App = () => {
   // Estado para controlar visualização (gestor/professor) para usuários com acesso dual
   const [viewMode, setViewMode] = useState<ViewMode>('gestor');
 
+  // Estado para bloquear redirecionamento durante recuperação de senha
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   useEffect(() => {
@@ -42,18 +44,28 @@ const App = () => {
 
       if (isSupabaseConfigured && supabase) {
         try {
-          // O link de recuperação contém access_token ou type=recovery
-          let isDuringRecovery = window.location.hash.includes('type=recovery') ||
-            window.location.hash.includes('access_token=');
+          console.log('🔍 [APP] URL ao carregar:', window.location.href);
 
-          if (isDuringRecovery) {
-            console.log('🔑 [APP] MODO RECUPERAÇÃO ATIVADO - Bloqueando redirecionamentos');
+          // Detecta link de recuperação de senha nos dois formatos do Supabase:
+          // Formato legado (Implicit):  /#access_token=...&type=recovery
+          // Formato moderno (PKCE):     /?code=...&type=recovery
+          const hashStr = window.location.hash;
+          const urlParams = new URLSearchParams(window.location.search);
+
+          const isImplicitRecovery = hashStr.includes('type=recovery') || hashStr.includes('access_token=');
+          const isPKCERecovery = urlParams.get('type') === 'recovery';
+          const isRecoveryURL = isImplicitRecovery || isPKCERecovery;
+
+          if (isRecoveryURL) {
+            console.log('🔑 [APP] MODO RECUPERAÇÃO ATIVADO');
+            setIsRecoveryMode(true);
             setView('resetPassword');
           }
 
           const fetchRoleSafe = async (email: string) => {
             const lowerEmail = email.toLowerCase().trim();
 
+            // E-mails de gestão fixos têm prioridade absoluta — nunca recebem role 'professor'
             if (FIXED_GESTAO_EMAILS.includes(lowerEmail)) {
               return 'gestor';
             }
@@ -73,28 +85,44 @@ const App = () => {
               const result: any = await Promise.race([query, timeoutPromise]);
               let role = result.data?.role || null;
 
-              if (!role && isProfessorRegistered(email)) {
+              // Fallback local: apenas para e-mails institucionais (@prof / @professor)
+              // Nunca aplicar fallback de 'professor' para e-mails de gestão não-institucionais
+              if (!role && !FIXED_GESTAO_EMAILS.includes(lowerEmail) && isProfessorRegistered(lowerEmail)) {
                 role = 'professor';
               }
               return role;
             } catch (e) {
               console.warn('⚠️ [APP] Fallback ativado para role:', email);
-              return isProfessorRegistered(email) ? 'professor' : null;
+              // No fallback de erro: mesma regra — gestão não vira professor
+              if (FIXED_GESTAO_EMAILS.includes(lowerEmail)) return 'gestor';
+              return isProfessorRegistered(lowerEmail) ? 'professor' : null;
             }
           };
 
           // 3. Monitor de autenticação
+          // IMPORTANTE: captura uma referência síncrona da URL antes do listener processar qualquer evento
+          const recoveryURLSnapshot = window.location.hash.includes('type=recovery') ||
+            new URLSearchParams(window.location.search).get('type') === 'recovery';
+
           const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log(`[APP] Auth Event: ${event}`);
+            console.log(`[APP] Auth Event: ${event}`, session?.user?.email);
 
             if (event === 'PASSWORD_RECOVERY') {
-              isDuringRecovery = true;
+              console.log('🔑 [AUTH] Evento de Recuperação Detectado');
+              setIsRecoveryMode(true);
               setView('resetPassword');
               return;
             }
 
             if (session?.user) {
-              if (isDuringRecovery) {
+              // Verifica via estado React OU snapshot da URL capturado antes do listener
+              const urlHasRecovery = recoveryURLSnapshot ||
+                window.location.hash.includes('type=recovery') ||
+                new URLSearchParams(window.location.search).get('type') === 'recovery';
+
+              if (isRecoveryMode || urlHasRecovery) {
+                console.log('🔄 [AUTH] Em modo recuperação, mantendo ResetPassword');
+                setIsRecoveryMode(true);
                 setView('resetPassword');
                 return;
               }
@@ -110,7 +138,7 @@ const App = () => {
                 setView('login');
               }
             } else if (event === 'SIGNED_OUT') {
-              isDuringRecovery = false;
+              setIsRecoveryMode(false);
               setUser(null);
               setView('login');
             }
@@ -119,7 +147,10 @@ const App = () => {
           authListener = subscription;
 
           // 4. Verificação inicial da sessão
-          if (!isDuringRecovery) {
+          const isInRecoveryURL = window.location.hash.includes('type=recovery') ||
+            new URLSearchParams(window.location.search).get('type') === 'recovery';
+
+          if (!isRecoveryMode && !isInRecoveryURL) {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
               const role = await fetchRoleSafe(session.user.email!);
@@ -694,7 +725,7 @@ const App = () => {
 
       {/* Marcador de Versão para Depuração */}
       <div className="fixed bottom-2 left-2 text-[8px] font-black text-gray-500/30 uppercase pointer-events-none select-none z-[100]">
-        Build Version: 1.15.2
+        Build Version: V2026.1
       </div>
     </div>
   );
