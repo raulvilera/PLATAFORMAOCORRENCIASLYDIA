@@ -4,26 +4,17 @@
 export interface ProfessorData {
     email: string;
     nome: string;
+    role?: 'gestor' | 'professor';
 }
-
-/**
- * E-mails de gestão com perfil fixo que não necessitam de verificação no banco de dados.
- */
-export const FIXED_GESTAO_EMAILS = [
-    'cadastroslkm@gmail.com',
-    'cadatroslkm@gmail.com',
-    'gestao@escola.com'
-];
 
 export const PROFESSORS_DB: ProfessorData[] = [
     // Contas de gestão
-    { email: 'gestao@escola.com', nome: 'GESTÃO ESCOLAR' },
-    { email: 'vilera@prof.educacao.sp.gov.br', nome: 'RAUL VILERA - GESTÃO' },
-    { email: 'cadastroslkm@gmail.com', nome: 'CADASTROS LKM - GESTÃO' },
-    { email: 'cadatroslkm@gmail.com', nome: 'CADASTROS LKM - GESTÃO' },
-    { email: 'alinecardoso1@prof.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO' },
-    { email: 'alinecardoso1@professor.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO' },
-    { email: 'aline.gestao@prof.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO' },
+    { email: 'gestao@escola.com', nome: 'GESTÃO ESCOLAR', role: 'gestor' },
+    { email: 'vilera@prof.educacao.sp.gov.br', nome: 'RAUL VILERA - GESTÃO', role: 'gestor' },
+    { email: 'cadastroslkm@gmail.com', nome: 'CADASTROS LKM - GESTÃO', role: 'gestor' },
+    { email: 'alinecardoso1@prof.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO', role: 'gestor' },
+    { email: 'alinecardoso1@professor.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO', role: 'gestor' },
+    { email: 'aline.gestao@prof.educacao.sp.gov.br', nome: 'ALINE CARDOSO - GESTÃO', role: 'gestor' },
     { email: 'deizylaura@prof.educacao.sp.gov.br', nome: 'DEIZY LAURA - GESTÃO' },
     { email: 'anderson.ikawa@servidor.educacao.sp.gov.br', nome: 'ANDERSON IKAWA - GESTÃO' },
 
@@ -207,6 +198,17 @@ const normalizeInstitutionalEmail = (email: string): string => {
 export const isProfessorRegistered = (email: string): boolean => {
     const normalizedTarget = normalizeInstitutionalEmail(email);
     return PROFESSORS_DB.some(p => normalizeInstitutionalEmail(p.email) === normalizedTarget);
+};
+
+/**
+ * Retorna o role do e-mail a partir da lista local.
+ * Gestores têm role: 'gestor'. Professores sem role definido retornam 'professor'.
+ */
+export const getRoleFromLocalDB = (email: string): 'gestor' | 'professor' | null => {
+    const normalizedTarget = normalizeInstitutionalEmail(email);
+    const found = PROFESSORS_DB.find(p => normalizeInstitutionalEmail(p.email) === normalizedTarget);
+    if (!found) return null;
+    return found.role || 'professor';
 };
 
 /**
